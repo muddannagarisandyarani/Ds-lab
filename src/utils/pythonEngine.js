@@ -1,13 +1,14 @@
 /**
- * Dynamic Python Code Execution Simulator
- * Parses Python source code (stdout prints, variable assignments, dataframes, sklearn models, matplotlib plots)
- * and generates UNIQUE, script-specific console outputs, tables, and visualizations.
+ * Dynamic Python Code Execution Engine & Simulator
+ * Parses Python source code (stdout prints, variable assignments, DataFrames,
+ * pandas methods like fillna/describe/head, sklearn models, matplotlib plots)
+ * and generates clean, realistic console outputs, tables, and visualizations.
  */
 
-export function executePythonEngine(codeStr, expTitle = "") {
+export function executePythonEngine(codeStr, expTitle = "", fallbackOutput = "") {
   if (!codeStr || !codeStr.trim()) {
     return {
-      outputLogs: "[INFO] Ready to execute code. Click 'Run Code' above.",
+      outputLogs: fallbackOutput || "[INFO] Ready to execute code. Click 'Run Code' above.",
       tableData: null,
       chartData: null
     };
@@ -17,24 +18,227 @@ export function executePythonEngine(codeStr, expTitle = "") {
   let tableData = null;
   let chartData = null;
 
-  const lines = codeStr.split('\n');
   const codeLower = codeStr.toLowerCase();
-
-  logs.push(`[EXECUTION ENGINE] Running Python Script...`);
-  logs.push(`--------------------------------------------------`);
+  const lines = codeStr.split(/\r?\n/);
 
   const variables = {};
+  const dataFrames = {}; // Store parsed dataframes by variable name
   const printOutputs = [];
 
   let customHeaders = [];
   let customRows = [];
 
-  // 1. Line-by-line code parsing
-  lines.forEach((line) => {
+  // Helper: Format cell value
+  function formatVal(v) {
+    if (v === null || v === undefined || (typeof v === 'number' && isNaN(v))) return 'NaN';
+    if (typeof v === 'number') {
+      return Number.isInteger(v) ? String(v) : v.toFixed(v % 1 === 0 ? 1 : (v < 0.01 && v > 0 ? 4 : 2));
+    }
+    return String(v);
+  }
+
+  // Helper: Format ASCII pandas table
+  function formatPandasTable(headers, rows) {
+    if (!headers || headers.length === 0) return '';
+    const colWidths = headers.map((h, i) => {
+      let maxLen = String(h).length;
+      rows.forEach(r => {
+        const cellStr = formatVal(r[i]);
+        if (cellStr.length > maxLen) maxLen = cellStr.length;
+      });
+      return Math.max(maxLen, 6);
+    });
+
+    const pad = (str, len) => String(str).padStart(len, ' ');
+
+    let headerLine = '   ' + headers.map((h, i) => pad(h, colWidths[i])).join('  ');
+    let linesArr = [headerLine];
+
+    rows.forEach((r, idx) => {
+      let rowLine = pad(idx, 2) + ' ' + r.map((cell, i) => pad(formatVal(cell), colWidths[i])).join('  ');
+      linesArr.push(rowLine);
+    });
+
+    return linesArr.join('\n');
+  }
+
+  // Helper: Generate describe() summary table
+  function formatDescribeTable(headers, rows) {
+    const numericCols = [];
+    headers.forEach((h, colIdx) => {
+      const isNum = rows.some(r => typeof r[colIdx] === 'number' && !isNaN(r[colIdx]));
+      if (isNum) numericCols.push({ name: h, index: colIdx });
+    });
+
+    if (numericCols.length === 0) return '[DataFrame Statistics: No numerical columns]';
+
+    const stats = ['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max'];
+    const statData = {};
+
+    numericCols.forEach(col => {
+      const vals = rows.map(r => r[col.index]).filter(v => typeof v === 'number' && !isNaN(v)).sort((a, b) => a - b);
+      const count = vals.length;
+      if (count === 0) return;
+
+      const sum = vals.reduce((a, b) => a + b, 0);
+      const mean = sum / count;
+      const sqDiffs = vals.map(v => Math.pow(v - mean, 2));
+      const std = Math.sqrt(sqDiffs.reduce((a, b) => a + b, 0) / (count > 1 ? count - 1 : 1));
+      const min = vals[0];
+      const max = vals[count - 1];
+      const p25 = vals[Math.floor(count * 0.25)] || min;
+      const p50 = vals[Math.floor(count * 0.50)] || mean;
+      const p75 = vals[Math.floor(count * 0.75)] || max;
+
+      statData[col.name] = { count, mean, std, min, '25%': p25, '50%': p50, '75%': p75, max };
+    });
+
+    const colNames = Object.keys(statData);
+    const colWidths = colNames.map(name => {
+      let maxLen = name.length;
+      stats.forEach(st => {
+        const str = formatVal(statData[name][st]);
+        if (str.length > maxLen) maxLen = str.length;
+      });
+      return Math.max(maxLen, 10);
+    });
+
+    const pad = (str, len) => String(str).padStart(len, ' ');
+
+    let headerLine = '       ' + colNames.map((n, i) => pad(n, colWidths[i])).join('  ');
+    let resultArr = [headerLine];
+
+    stats.forEach(st => {
+      let line = pad(st, 6) + ' ' + colNames.map((n, i) => pad(formatVal(statData[n][st]), colWidths[i])).join('  ');
+      resultArr.push(line);
+    });
+
+    return resultArr.join('\n');
+  }
+
+  // 1. Pre-pass: Parse dictionary definitions for DataFrames
+  try {
+    const dictMatches = [...codeStr.matchAll(/(\w+)\s*=\s*\{([\s\S]*?)\}\s*(?:\n|$|df)/g)];
+    dictMatches.forEach(m => {
+      const varName = m[1];
+      const dictBody = m[2];
+      const keyValMatches = [...dictBody.matchAll(/['"](\w+)['"]\s*:\s*\[([\s\S]*?)\]/g)];
+      if (keyValMatches.length > 0) {
+        const headers = keyValMatches.map(kv => kv[1]);
+        const colsData = keyValMatches.map(kv => {
+          return kv[2].split(',').map(rawVal => {
+            const trimmedVal = rawVal.trim();
+            if (trimmedVal === 'np.nan' || trimmedVal === 'NaN' || trimmedVal === 'None') return NaN;
+            if (/^-?\d+(\.\d+)?$/.test(trimmedVal)) return Number(trimmedVal);
+            return trimmedVal.replace(/^['"]|['"]$/g, '');
+          });
+        });
+        const rowCount = Math.max(...colsData.map(c => c.length));
+        const rows = [];
+        for (let i = 0; i < rowCount; i++) {
+          rows.push(colsData.map(c => c[i] !== undefined ? c[i] : NaN));
+        }
+
+        dataFrames[varName] = { headers, rows };
+        dataFrames['df'] = { headers, rows };
+        customHeaders = headers;
+        customRows = rows;
+      }
+    });
+  } catch (_e) {
+    // Ignore dict parse errors
+  }
+
+  // If Iris dataset reference exists, preset Iris DataFrame
+  if (codeLower.includes('iris') && !dataFrames['df']) {
+    const irisHeaders = ["sepal_length", "sepal_width", "petal_length", "petal_width", "species"];
+    const irisRows = [
+      [5.1, 3.5, 1.4, 0.2, "setosa"],
+      [4.9, 3.0, 1.4, 0.2, "setosa"],
+      [4.7, 3.2, 1.3, 0.2, "setosa"],
+      [4.6, 3.1, 1.5, 0.2, "setosa"],
+      [5.0, 3.6, 1.4, 0.2, "setosa"]
+    ];
+    dataFrames['df'] = { headers: irisHeaders, rows: irisRows };
+    customHeaders = irisHeaders;
+    customRows = irisRows;
+  }
+
+  // Helper: Evaluate single print term
+  function evalTerm(term) {
+    term = term.trim();
+    if (!term) return '';
+
+    // Handle Escaped \n in string quotes
+    if (/^f?["'][\s\S]*["']$/.test(term)) {
+      let str = term.replace(/^f?["']|["']$/g, '');
+      str = str.replace(/\\n/g, '\n');
+      // Format string interpolation f"{var}"
+      Object.keys(variables).forEach(v => {
+        str = str.replace(new RegExp(`\\{${v}\\}`, 'g'), variables[v]);
+      });
+      return str;
+    }
+
+    // Check variables
+    if (variables[term] !== undefined) return String(variables[term]);
+
+    // Check DataFrames
+    const targetDf = dataFrames[term] || dataFrames['df'];
+
+    if (term.includes('.head(') || term.includes('.head()')) {
+      if (targetDf) return formatPandasTable(targetDf.headers, targetDf.rows.slice(0, 5));
+    }
+    if (term.includes('.tail(') || term.includes('.tail()')) {
+      if (targetDf) return formatPandasTable(targetDf.headers, targetDf.rows.slice(-5));
+    }
+    if (term.includes('.describe()')) {
+      if (targetDf) return formatDescribeTable(targetDf.headers, targetDf.rows);
+    }
+    if (term === 'df' || term === 'df_imputed' || term === 'scaled_df' || term === 'scaled_data' || dataFrames[term]) {
+      const dfObj = dataFrames[term] || targetDf;
+      if (dfObj) {
+        if (term === 'df_imputed') {
+          const imputedRows = dfObj.rows.map(row => {
+            return row.map((cell, colIdx) => {
+              if (cell === null || cell === undefined || (typeof cell === 'number' && isNaN(cell))) {
+                const nums = dfObj.rows.map(r => r[colIdx]).filter(v => typeof v === 'number' && !isNaN(v));
+                return nums.length > 0 ? (nums.reduce((a, b) => a + b, 0) / nums.length) : 0;
+              }
+              return cell;
+            });
+          });
+          return formatPandasTable(dfObj.headers, imputedRows);
+        }
+
+        if (term === 'scaled_df' || term === 'scaled_data') {
+          const scaledRows = dfObj.rows.map(row => {
+            return row.map((cell, colIdx) => {
+              if (typeof cell === 'number' && !isNaN(cell)) {
+                const nums = dfObj.rows.map(r => r[colIdx]).filter(v => typeof v === 'number' && !isNaN(v));
+                const min = Math.min(...nums);
+                const max = Math.max(...nums);
+                return max > min ? (cell - min) / (max - min) : 0;
+              }
+              return cell;
+            });
+          });
+          return formatPandasTable(dfObj.headers, scaledRows);
+        }
+
+        return formatPandasTable(dfObj.headers, dfObj.rows);
+      }
+    }
+
+    return term;
+  }
+
+  // 2. Line-by-line Execution Parsing
+  lines.forEach(line => {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) return;
 
-    // Capture variable assignments (e.g., age = 25, title = "Lab 1")
+    // Capture variable assignments (e.g., age = 25, score = 85.5)
     const assignMatch = trimmed.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.*)$/);
     if (assignMatch) {
       const varName = assignMatch[1].trim();
@@ -47,160 +251,68 @@ export function executePythonEngine(codeStr, expTitle = "") {
       }
     }
 
-    // Capture data dictionaries for DataFrames: data = { 'col1': [...], 'col2': [...] }
-    const dictMatch = trimmed.match(/(\w+)\s*=\s*\{([\s\S]*)\}/);
-    if (dictMatch) {
-      try {
-        const dictBody = dictMatch[2];
-        const keyValMatches = [...dictBody.matchAll(/['"](\w+)['"]\s*:\s*\[([\s\S]*?)\]/g)];
-        if (keyValMatches.length > 0) {
-          customHeaders = keyValMatches.map(m => m[1]);
-          const colsData = keyValMatches.map(m => 
-            m[2].split(',').map(v => v.trim().replace(/^['"]|['"]$/g, ''))
-          );
-          const rowCount = Math.max(...colsData.map(c => c.length));
-          customRows = [];
-          for (let i = 0; i < rowCount; i++) {
-            customRows.push(colsData.map(col => col[i] !== undefined ? col[i] : ''));
-          }
-        }
-      } catch (_err) {
-        // Fallback gracefully
-      }
-    }
-
-    // Capture print statements (print("..."), print(f"..."), print(var))
+    // Capture print(...) statements accurately
     const printMatch = trimmed.match(/^print\s*\((.*)\)$/);
     if (printMatch) {
-      let expr = printMatch[1].trim();
-      let printedVal = formatPrintExpression(expr, variables, customHeaders, customRows);
-      printOutputs.push(printedVal);
+      const rawExpr = printMatch[1].trim();
+
+      // Split arguments by comma while respecting quotes
+      const terms = [];
+      let currentTerm = '';
+      let inQuotes = false;
+      let quoteChar = '';
+
+      for (let i = 0; i < rawExpr.length; i++) {
+        const char = rawExpr[i];
+        if ((char === '"' || char === "'") && (i === 0 || rawExpr[i - 1] !== '\\')) {
+          if (!inQuotes) {
+            inQuotes = true;
+            quoteChar = char;
+          } else if (char === quoteChar) {
+            inQuotes = false;
+          }
+        }
+
+        if (char === ',' && !inQuotes) {
+          terms.push(currentTerm);
+          currentTerm = '';
+        } else {
+          currentTerm += char;
+        }
+      }
+      if (currentTerm) terms.push(currentTerm);
+
+      const evaluatedParts = terms.map(t => evalTerm(t));
+      printOutputs.push(evaluatedParts.join(' '));
     }
 
-    // Capture file I/O operations (to_csv, open/write)
+    // File writing simulation
     if (trimmed.includes('.to_csv(') || (trimmed.includes('open(') && trimmed.includes('write'))) {
       const fileMatch = trimmed.match(/['"]([\w./\\]+\.(?:csv|txt|json|dat))['"]/);
-      const filename = fileMatch ? fileMatch[1] : 'output_file.txt';
-      printOutputs.push(`[FILE I/O] Output successfully written to ${filename}`);
+      const filename = fileMatch ? fileMatch[1] : 'dataset_export.csv';
+      printOutputs.push(`[FILE I/O] Output successfully saved to ${filename}`);
     }
   });
 
-  // Helper function to format print expressions
-  function formatPrintExpression(expr, vars, headers, rows) {
-    // String literal
-    if (/^f?["'][\s\S]*["']$/.test(expr)) {
-      let str = expr.replace(/^f?["']|["']$/g, '');
-      Object.keys(vars).forEach(v => {
-        str = str.replace(new RegExp(`\\{${v}\\}`, 'g'), vars[v]);
-      });
-      return str;
-    }
-
-    // Multi-argument comma-separated print
-    if (expr.includes(',')) {
-      const parts = expr.split(',').map(p => p.trim());
-      const formattedParts = parts.map(p => {
-        if (/^f?["'].*["']$/.test(p)) return p.replace(/^f?["']|["']$/g, '');
-        if (vars[p] !== undefined) return vars[p];
-        if (p === 'df' || p === 'df.head()') return '[DataFrame Preview]';
-        return p;
-      });
-      return formattedParts.join(' ');
-    }
-
-    // Variable reference
-    if (vars[expr] !== undefined) {
-      return String(vars[expr]);
-    }
-
-    // DataFrame prints
-    if (expr.includes('df.head') || expr === 'df' || expr.includes('df.tail')) {
-      if (headers.length > 0) {
-        let tableStr = headers.join('  ') + '\n';
-        rows.slice(0, 5).forEach((r, idx) => {
-          tableStr += `${idx}  ` + r.join('  ') + '\n';
-        });
-        return tableStr.trim();
-      }
-      return `[DataFrame Object]\n   col_0  col_1  col_2\n0    10     20     30\n1    15     25     35\n2    20     30     40`;
-    }
-
-    return expr.replace(/^f?["']|["']$/g, '');
-  }
-
-  // 2. Data Science Library Specific Execution Insights
-
-  // Data Cleaning & Preprocessing
-  if (codeLower.includes('fillna') || codeLower.includes('isnull') || codeLower.includes('dropna')) {
-    logs.push(`[PREPROCESSING] Null Value Inspection:`);
-    if (customHeaders.length > 0) {
-      customHeaders.forEach(h => logs.push(`- ${h}: Missing values checked & cleaned`));
-    } else {
-      logs.push(`- Null check complete: Missing values imputed with column mean.`);
-    }
-  }
-
-  // Feature Scaling & Normalization
-  if (codeLower.includes('minmaxscaler') || codeLower.includes('standardscaler') || codeLower.includes('normalize')) {
-    logs.push(`[FEATURE SCALING] Feature Normalization applied.`);
-    logs.push(`Normalized numerical features to range [0.00, 1.00]`);
-  }
-
-  // Classification Models
-  if (codeLower.includes('decisiontree') || codeLower.includes('randomforest') || codeLower.includes('logisticregression') || codeLower.includes('svc')) {
-    let modelName = "DecisionTreeClassifier";
-    if (codeLower.includes('randomforest')) modelName = "RandomForestClassifier";
-    if (codeLower.includes('logisticregression')) modelName = "LogisticRegression";
-    if (codeLower.includes('svc')) modelName = "Support Vector Classifier (SVC)";
-
-    logs.push(`[MODEL TRAINING] Algorithm: ${modelName}`);
-    logs.push(`Training model on dataset...`);
-    if (codeLower.includes('accuracy_score') || codeLower.includes('predict')) {
-      logs.push(`[EVALUATION] Model Accuracy Score: 0.9500 (95.00%)`);
-    }
-  }
-
-  // Regression Models
-  if (codeLower.includes('linearregression') || codeLower.includes('mean_squared_error') || codeLower.includes('r2_score')) {
-    logs.push(`[REGRESSION ENGINE] Model: LinearRegression()`);
-    logs.push(`Calculated Coefficients & Intercept.`);
-    logs.push(`R² Score: 0.914 | Mean Squared Error (MSE): 1.24`);
-  }
-
-  // Clustering Models
-  if (codeLower.includes('kmeans') || codeLower.includes('cluster')) {
-    logs.push(`[CLUSTERING ENGINE] Algorithm: KMeans(n_clusters=3)`);
-    logs.push(`Cluster Inertia computed.`);
-  }
-
-  // Render script's stdout prints
+  // 3. Assemble Output Logs
   if (printOutputs.length > 0) {
-    logs.push(`\n=== SCRIPT OUTPUT (STDOUT) ===`);
     printOutputs.forEach(p => logs.push(p));
+  } else if (fallbackOutput && fallbackOutput.trim()) {
+    logs.push(fallbackOutput.trim());
   } else {
-    logs.push(`\n[SCRIPT OUTPUT] Code executed cleanly.`);
+    logs.push(`Script executed successfully.`);
+    logs.push(`[STATUS] Execution Completed (Exit Code: 0)`);
   }
 
-  // 3. Tabular Dataset Preview (Only if DataFrame data is explicitly defined/imported)
+  // 4. Tabular Dataset Preview (For table view tab)
   if (customHeaders.length > 0 && customRows.length > 0) {
     tableData = {
       headers: customHeaders,
-      rows: customRows
-    };
-  } else if (codeLower.includes('iris')) {
-    tableData = {
-      headers: ["sepal_length", "sepal_width", "petal_length", "petal_width", "species"],
-      rows: [
-        [5.1, 3.5, 1.4, 0.2, "setosa"],
-        [4.9, 3.0, 1.4, 0.2, "setosa"],
-        [4.7, 3.2, 1.3, 0.2, "setosa"],
-        [4.6, 3.1, 1.5, 0.2, "setosa"],
-        [5.0, 3.6, 1.4, 0.2, "setosa"]
-      ]
+      rows: customRows.slice(0, 10).map(r => r.map(formatVal))
     };
   }
 
-  // 4. Visual Plot Preview (Only if plot libraries are explicitly invoked)
+  // 5. Visual Chart Preview (If plot library is detected)
   if (codeLower.includes('matplotlib') || codeLower.includes('plt.') || codeLower.includes('seaborn') || codeLower.includes('sns.')) {
     let chartType = 'line';
     if (codeLower.includes('bar') || codeLower.includes('hist')) chartType = 'bar';
@@ -212,7 +324,7 @@ export function executePythonEngine(codeStr, expTitle = "") {
       labels: ['Sample 1', 'Sample 2', 'Sample 3', 'Sample 4', 'Sample 5'],
       datasets: [
         {
-          label: expTitle || 'Visual Feature Plot',
+          label: expTitle || 'Data Science Visualization',
           data: [12, 19, 14, 25, 30],
           borderColor: 'rgb(6, 182, 212)',
           backgroundColor: 'rgba(6, 182, 212, 0.2)',
@@ -221,9 +333,6 @@ export function executePythonEngine(codeStr, expTitle = "") {
       ]
     };
   }
-
-  logs.push(`--------------------------------------------------`);
-  logs.push(`[STATUS] Execution Finished (Exit Code: 0)`);
 
   return {
     outputLogs: logs.join('\n'),

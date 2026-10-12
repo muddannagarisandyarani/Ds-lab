@@ -174,6 +174,48 @@ exports.deleteSubExperiment = async (req, res) => {
   }
 };
 
+// @desc    Update sub-experiment in main experiment
+// @route   PUT /api/experiments/:id/sub/:subId
+exports.updateSubExperiment = async (req, res) => {
+  try {
+    const { id, subId } = req.params;
+    let exp = await Experiment.findOne({ id });
+    if (!exp && id.match(/^[0-9a-fA-F]{24}$/)) {
+      exp = await Experiment.findById(id);
+    }
+
+    if (!exp) {
+      return res.status(404).json({ success: false, message: 'Experiment not found' });
+    }
+
+    let found = false;
+    exp.subExperiments = (exp.subExperiments || []).map(sub => {
+      const currentSubId = sub.id || sub._id?.toString();
+      if (currentSubId === subId) {
+        found = true;
+        const subObj = sub.toObject ? sub.toObject() : sub;
+        return {
+          ...subObj,
+          ...req.body,
+          id: subId
+        };
+      }
+      return sub;
+    });
+
+    if (!found) {
+      return res.status(404).json({ success: false, message: 'Sub-experiment not found' });
+    }
+
+    const updated = await exp.save();
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    console.error('[API ERROR] updateSubExperiment:', error);
+    res.status(500).json({ success: false, message: 'Failed to update sub-experiment', error: error.message });
+  }
+};
+
+
 // @desc    Batch migrate user custom experiments from localStorage to MongoDB
 // @route   POST /api/experiments/batch-migrate
 exports.batchMigrate = async (req, res) => {

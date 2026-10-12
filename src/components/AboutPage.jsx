@@ -1,7 +1,8 @@
 import React from 'react';
-import { Database, UserCheck, GraduationCap, Cpu, Code2, Award, Sparkles, Layers } from 'lucide-react';
+import { Database, UserCheck, GraduationCap, Cpu, Code2, Award, Sparkles, Layers, Edit3, ExternalLink } from 'lucide-react';
+import { GithubIcon, LinkedinIcon, formatGithubUrl, formatLinkedinUrl } from './SocialIcons';
 
-export default function AboutPage({ profile }) {
+export default function AboutPage({ profile, onEditProfile }) {
   const techStack = [
     { name: "Python 3.11+", desc: "Core Data Analytics Engine", color: "from-blue-500 to-yellow-400" },
     { name: "Pandas & NumPy", desc: "Data Wrangling & Tensor Ops", color: "from-indigo-500 to-purple-500" },
@@ -37,14 +38,26 @@ export default function AboutPage({ profile }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Student Profile Overview */}
         <div className="rounded-2xl glass-card p-6 border border-slate-800 space-y-4">
-          <div className="flex items-center space-x-3 border-b border-slate-800 pb-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600/20 text-cyan-400 flex items-center justify-center font-bold">
-              <GraduationCap className="w-5 h-5" />
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-600/20 text-cyan-400 flex items-center justify-center font-bold">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Student Information</h3>
+                <p className="text-xs text-slate-400">Author & Lab Developer</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-base font-bold text-white">Student Information</h3>
-              <p className="text-xs text-slate-400">Author & Lab Developer</p>
-            </div>
+            {onEditProfile && (
+              <button
+                type="button"
+                onClick={onEditProfile}
+                className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-cyan-500/20 border border-slate-700/80 hover:border-cyan-400/50 text-slate-300 hover:text-cyan-300 text-xs font-semibold transition-all cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Edit</span>
+              </button>
+            )}
           </div>
 
           <div className="space-y-2.5 text-xs">
@@ -64,6 +77,58 @@ export default function AboutPage({ profile }) {
               <span className="text-slate-400">Section</span>
               <span className="text-white font-semibold">{profile.section}</span>
             </div>
+            {/* GitHub */}
+            <div className="flex items-center justify-between py-1 border-b border-slate-800/50">
+              <span className="text-slate-400 flex items-center gap-1.5">
+                <GithubIcon className="w-3.5 h-3.5 text-slate-400" />
+                <span>GitHub</span>
+              </span>
+              {profile.github ? (
+                <a
+                  href={formatGithubUrl(profile.github)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-cyan-400 hover:text-cyan-300 font-mono font-medium flex items-center gap-1 hover:underline"
+                >
+                  <span className="truncate max-w-[180px]">{profile.github.replace(/^https?:\/\/(www\.)?github\.com\//, '@')}</span>
+                  <ExternalLink className="w-3 h-3 shrink-0" />
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onEditProfile}
+                  className="text-slate-500 hover:text-cyan-400 text-xs italic hover:underline cursor-pointer"
+                >
+                  + Add Link
+                </button>
+              )}
+            </div>
+            {/* LinkedIn */}
+            <div className="flex items-center justify-between py-1">
+              <span className="text-slate-400 flex items-center gap-1.5">
+                <LinkedinIcon className="w-3.5 h-3.5 text-sky-400" />
+                <span>LinkedIn</span>
+              </span>
+              {profile.linkedin ? (
+                <a
+                  href={formatLinkedinUrl(profile.linkedin)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sky-400 hover:text-sky-300 font-mono font-medium flex items-center gap-1 hover:underline"
+                >
+                  <span className="truncate max-w-[180px]">{profile.linkedin.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, '@')}</span>
+                  <ExternalLink className="w-3 h-3 shrink-0" />
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onEditProfile}
+                  className="text-slate-500 hover:text-sky-400 text-xs italic hover:underline cursor-pointer"
+                >
+                  + Add Link
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -81,8 +146,8 @@ export default function AboutPage({ profile }) {
 
           <div className="space-y-2.5 text-xs">
             <div className="flex justify-between py-1 border-b border-slate-800/50">
-              <span className="text-slate-400">Professor Name</span>
-              <span className="text-white font-bold">{profile.professor}</span>
+              <span className="text-slate-400">Assistant Professor</span>
+              <span className="text-white font-bold">{profile.assistantProfessor || profile.professor || "S.Bosubabu"}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-800/50">
               <span className="text-slate-400">Department</span>

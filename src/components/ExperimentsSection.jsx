@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   FlaskConical, Search, Plus, Folder, FileCode, Play, Copy, Check,
-  RefreshCw, Terminal, Table as TableIcon, BarChart, Code2, AlertCircle, Sparkles, Trash2
+  RefreshCw, Terminal, Table as TableIcon, BarChart, Code2, AlertCircle, Trash2, Pencil, Save, Share2
 } from 'lucide-react';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement,
   BarElement, Title, Tooltip, Legend, RadialLinearScale
 } from 'chart.js';
 import { Line, Bar, Scatter, Radar } from 'react-chartjs-2';
+import EditExperimentModal from './EditExperimentModal';
+import EditSubExperimentModal from './EditSubExperimentModal';
+import EditCodeModal from './EditCodeModal';
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement,
@@ -27,9 +30,12 @@ export default function ExperimentsSection({
   experiments,
   onOpenAddExpModal,
   onOpenAddSubExpModal,
+  onEditExperiment,
+  onEditSubExperiment,
   onUpdateSubExpCode,
   onDeleteExperiment,
-  onDeleteSubExperiment
+  onDeleteSubExperiment,
+  onOpenSyncModal
 }) {
   const [selectedExpId, setSelectedExpId] = useState(experiments[0]?.id || null);
   const [selectedSubExpId, setSelectedSubExpId] = useState(
@@ -42,6 +48,14 @@ export default function ExperimentsSection({
   const [isFetchingGithub, setIsFetchingGithub] = useState(false);
   const [githubError, setGithubError] = useState('');
   const [isRunning, setIsRunning] = useState(false);
+
+  // Edit Modals and Save state
+  const [isEditExpModalOpen, setIsEditExpModalOpen] = useState(false);
+  const [editingExp, setEditingExp] = useState(null);
+  const [isEditSubExpModalOpen, setIsEditSubExpModalOpen] = useState(false);
+  const [editingSubExp, setEditingSubExp] = useState(null);
+  const [isEditCodeModalOpen, setIsEditCodeModalOpen] = useState(false);
+  const [isCodeSaved, setIsCodeSaved] = useState(false);
 
   // Sync selected IDs if experiments change or elements get deleted
   useEffect(() => {
@@ -87,13 +101,31 @@ export default function ExperimentsSection({
     }
   }, [selectedSubExpId, activeSubExp]);
 
+  const hasUnsavedCode = Boolean(activeSubExp && editingCode !== (activeSubExp.code || ''));
+
+  const handleSaveCode = (codeToSave, urlToSave, outputToSave) => {
+    const finalCode = codeToSave !== undefined ? codeToSave : editingCode;
+    const finalUrl = urlToSave !== undefined ? urlToSave : githubUrlInput;
+    const finalOutput = outputToSave !== undefined ? outputToSave : customConsoleOutput;
+
+    if (onUpdateSubExpCode && activeSubExp) {
+      onUpdateSubExpCode(selectedExpId, selectedSubExpId, finalCode, finalUrl, finalOutput);
+      setIsCodeSaved(true);
+      setTimeout(() => setIsCodeSaved(false), 2500);
+    }
+  };
+
   // Execute / Run Python Code Engine
   const handleRunCode = (codeToRun) => {
     const codeStr = codeToRun || editingCode;
     setIsRunning(true);
 
     setTimeout(() => {
-      const result = executePythonEngine(codeStr, activeSubExp?.title || activeExp?.title || '');
+      const result = executePythonEngine(
+        codeStr,
+        activeSubExp?.title || activeExp?.title || '',
+        activeSubExp?.consoleOutput || ''
+      );
 
       setCustomConsoleOutput(result.outputLogs);
       setCustomTableData(result.tableData || null);
@@ -101,6 +133,8 @@ export default function ExperimentsSection({
 
       if (onUpdateSubExpCode && activeSubExp) {
         onUpdateSubExpCode(selectedExpId, selectedSubExpId, codeStr, githubUrlInput, result.outputLogs);
+        setIsCodeSaved(true);
+        setTimeout(() => setIsCodeSaved(false), 2500);
       }
       setIsRunning(false);
       setActiveTab('output');
@@ -182,9 +216,20 @@ export default function ExperimentsSection({
             />
           </div>
 
+          {onOpenSyncModal && (
+            <button
+              onClick={onOpenSyncModal}
+              className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-cyan-500/30 hover:border-cyan-400 text-cyan-300 hover:text-white text-xs font-semibold transition-all shadow-sm shrink-0 cursor-pointer"
+              title="Sync & Export experiments data"
+            >
+              <Share2 className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden sm:inline">Sync / Export</span>
+            </button>
+          )}
+
           <button
             onClick={onOpenAddExpModal}
-            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-xs font-bold shadow-md shadow-cyan-500/20 hover:brightness-110 transition-all shrink-0"
+            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-xs font-bold shadow-md shadow-cyan-500/20 hover:brightness-110 transition-all shrink-0 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add New</span>
@@ -243,20 +288,35 @@ export default function ExperimentsSection({
                         <Folder className={`w-4 h-4 shrink-0 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
                         <span className="truncate">{exp.title}</span>
                       </button>
-                      {onDeleteExperiment && (
+                      <div className="flex items-center space-x-0.5 shrink-0">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            onDeleteExperiment(exp.id);
+                            setEditingExp(exp);
+                            setIsEditExpModalOpen(true);
                           }}
-                          title="Delete Main Experiment"
-                          className="p-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-950/60 transition-colors opacity-80 group-hover:opacity-100 shrink-0"
+                          title="Edit Main Experiment"
+                          className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-cyan-950/60 transition-colors opacity-80 group-hover:opacity-100"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Pencil className="w-3.5 h-3.5" />
                         </button>
-                      )}
+                        {onDeleteExperiment && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onDeleteExperiment(exp.id);
+                            }}
+                            title="Delete Main Experiment"
+                            className="p-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-950/60 transition-colors opacity-80 group-hover:opacity-100"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -296,20 +356,35 @@ export default function ExperimentsSection({
                         <FileCode className={`w-4 h-4 shrink-0 ${isSelected ? 'text-cyan-400' : 'text-slate-400'}`} />
                         <span className="truncate">{sub.title}</span>
                       </button>
-                      {onDeleteSubExperiment && (
+                      <div className="flex items-center space-x-0.5 shrink-0">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            onDeleteSubExperiment(activeExp.id, sub.id);
+                            setEditingSubExp(sub);
+                            setIsEditSubExpModalOpen(true);
                           }}
-                          title="Delete Sub-Experiment"
-                          className="p-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-950/60 transition-colors opacity-80 group-hover:opacity-100 shrink-0"
+                          title="Edit Sub-Experiment"
+                          className="p-2 rounded-xl text-slate-400 hover:text-cyan-300 hover:bg-cyan-950/60 transition-colors opacity-80 group-hover:opacity-100"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Pencil className="w-3.5 h-3.5" />
                         </button>
-                      )}
+                        {onDeleteSubExperiment && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onDeleteSubExperiment(activeExp.id, sub.id);
+                            }}
+                            title="Delete Sub-Experiment"
+                            className="p-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-950/60 transition-colors opacity-80 group-hover:opacity-100"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -383,6 +458,48 @@ export default function ExperimentsSection({
               </div>
 
               <div className="flex items-center space-x-2">
+                {/* Edit Code Modal Button */}
+                {activeSubExp && (
+                  <button
+                    onClick={() => {
+                      setEditingSubExp(activeSubExp);
+                      setIsEditCodeModalOpen(true);
+                    }}
+                    className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/70 text-cyan-300 text-xs font-bold border border-cyan-500/40 transition-all shadow-sm"
+                    title="Open Dedicated Code Editor Modal"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Edit Code</span>
+                  </button>
+                )}
+
+                {/* Save Code Button */}
+                {activeSubExp && (
+                  <button
+                    onClick={() => handleSaveCode()}
+                    className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${
+                      hasUnsavedCode
+                        ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-500/20'
+                        : isCodeSaved
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                    }`}
+                    title={hasUnsavedCode ? "Save uncommitted code changes (Ctrl+S)" : "Code is saved"}
+                  >
+                    {isCodeSaved ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-300" />
+                        <span>Saved</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-3.5 h-3.5" />
+                        <span>{hasUnsavedCode ? 'Save Code *' : 'Save Code'}</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
                 {/* Run Code Button */}
                 <button
                   onClick={() => handleRunCode()}
@@ -418,14 +535,14 @@ export default function ExperimentsSection({
                 <div className="relative h-full">
                   <textarea
                     value={editingCode}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setEditingCode(val);
-                      if (onUpdateSubExpCode && activeSubExp) {
-                        onUpdateSubExpCode(selectedExpId, selectedSubExpId, val, githubUrlInput);
+                    onChange={(e) => setEditingCode(e.target.value)}
+                    onKeyDown={(e) => {
+                      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        e.preventDefault();
+                        handleSaveCode();
                       }
                     }}
-                    placeholder="# Write Python code here or fetch from GitHub..."
+                    placeholder="# Write Python code here or fetch from GitHub... (Ctrl+S to save)"
                     className="w-full h-full min-h-[300px] bg-transparent text-cyan-300 font-mono text-xs leading-relaxed focus:outline-none resize-none"
                     spellCheck="false"
                   />
@@ -542,6 +659,59 @@ export default function ExperimentsSection({
           </div>
         </div>
       )}
+
+      {/* Edit Main Experiment Modal */}
+      <EditExperimentModal
+        isOpen={isEditExpModalOpen}
+        onClose={() => {
+          setIsEditExpModalOpen(false);
+          setEditingExp(null);
+        }}
+        experiment={editingExp}
+        onEditExperiment={(expId, data) => {
+          if (onEditExperiment) {
+            onEditExperiment(expId, data);
+          }
+        }}
+      />
+
+      {/* Edit Sub-Experiment Modal */}
+      <EditSubExperimentModal
+        isOpen={isEditSubExpModalOpen}
+        onClose={() => {
+          setIsEditSubExpModalOpen(false);
+          setEditingSubExp(null);
+        }}
+        expId={selectedExpId}
+        subExperiment={editingSubExp}
+        onEditSubExperiment={(expId, subId, data) => {
+          if (onEditSubExperiment) {
+            onEditSubExperiment(expId, subId, data);
+          }
+          if (subId === selectedSubExpId) {
+            setEditingCode(data.code || '');
+            setGithubUrlInput(data.githubUrl || '');
+            setCustomConsoleOutput(data.consoleOutput || '');
+          }
+        }}
+      />
+
+      {/* Edit Code Modal */}
+      <EditCodeModal
+        isOpen={isEditCodeModalOpen}
+        onClose={() => {
+          setIsEditCodeModalOpen(false);
+          setEditingSubExp(null);
+        }}
+        expId={selectedExpId}
+        subExperiment={activeSubExp}
+        onSaveCode={(expId, subId, code, githubUrl, consoleOutput) => {
+          handleSaveCode(code, githubUrl, consoleOutput);
+          setEditingCode(code);
+          setGithubUrlInput(githubUrl || '');
+          setCustomConsoleOutput(consoleOutput || '');
+        }}
+      />
     </section>
   );
 }

@@ -1,10 +1,11 @@
 import React from 'react';
-import { Home, BookOpen, FlaskConical, Info, Sparkles, Database } from 'lucide-react';
+import { Home, BookOpen, GraduationCap, FlaskConical, Info, Sparkles } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab }) {
   const sidebarItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'modules', label: 'Modules', icon: BookOpen },
+    { id: 'syllabus', label: 'Syllabus & Curriculum', icon: GraduationCap },
     { id: 'experiments', label: 'Experiments', icon: FlaskConical },
     { id: 'about', label: 'About', icon: Info },
   ];
@@ -40,7 +41,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         </nav>
       </div>
 
-      {/* Lower Tech Visual Card & Quote (As seen in the screenshot bottom left) */}
+      {/* Lower Tech Visual Card & Quote */}
       <div className="mt-6 pt-4 border-t border-slate-800/80">
         <div className="relative rounded-2xl overflow-hidden border border-cyan-500/30 shadow-2xl group">
           <img

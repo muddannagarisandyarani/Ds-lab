@@ -59,6 +59,15 @@ export async function updateExperimentApi(id, expData) {
   return res.data;
 }
 
+// Update sub-experiment
+export async function updateSubExperimentApi(id, subId, subData) {
+  const res = await request(`/experiments/${id}/sub/${subId}`, {
+    method: 'PUT',
+    body: JSON.stringify(subData)
+  });
+  return res.data;
+}
+
 // Delete experiment
 export async function deleteExperimentApi(id) {
   return request(`/experiments/${id}`, {

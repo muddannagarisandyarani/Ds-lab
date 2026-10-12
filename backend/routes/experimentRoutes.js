@@ -5,6 +5,7 @@ const {
   getExperimentById,
   createExperiment,
   updateExperiment,
+  updateSubExperiment,
   deleteExperiment,
   deleteSubExperiment,
   batchMigrate
@@ -15,6 +16,7 @@ router.post('/', createExperiment);
 router.post('/batch-migrate', batchMigrate);
 router.get('/:id', getExperimentById);
 router.put('/:id', updateExperiment);
+router.put('/:id/sub/:subId', updateSubExperiment);
 router.delete('/:id', deleteExperiment);
 router.delete('/:id/sub/:subId', deleteSubExperiment);
 
