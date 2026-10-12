@@ -1,5 +1,6 @@
 import React from 'react';
 import { Home, BookOpen, GraduationCap, FlaskConical, Info, Sparkles } from 'lucide-react';
+import { getAssetUrl } from '../utils/assetUrl';
 
 export default function Sidebar({ activeTab, setActiveTab }) {
   const sidebarItems = [
@@ -45,7 +46,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
       <div className="mt-6 pt-4 border-t border-slate-800/80">
         <div className="relative rounded-2xl overflow-hidden border border-cyan-500/30 shadow-2xl group">
           <img
-            src="/sidebar_graphic.jpg"
+            src={getAssetUrl('sidebar_graphic.jpg')}
             alt="Data Science Tech Visual"
             className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 brightness-90"
           />

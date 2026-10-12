@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sparkles, Compass, Rocket } from 'lucide-react';
+import { getAssetUrl } from '../utils/assetUrl';
 
 export default function WelcomeHero() {
   return (
@@ -38,7 +39,7 @@ export default function WelcomeHero() {
         {/* Right 3D Chart Graphic Banner */}
         <div className="relative shrink-0 w-full md:w-72 lg:w-80 h-36 sm:h-44 rounded-xl overflow-hidden border border-cyan-500/30 shadow-xl group">
           <img
-            src="/hero_banner.jpg"
+            src={getAssetUrl('hero_banner.jpg')}
             alt="Data Analytics Graphic"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />

@@ -1,6 +1,7 @@
 import React from 'react';
 import { User, Hash, GraduationCap, Layers, UserCheck, Quote, Edit3, ExternalLink, Camera } from 'lucide-react';
 import { GithubIcon, LinkedinIcon, formatGithubUrl, formatLinkedinUrl } from './SocialIcons';
+import { getAssetUrl } from '../utils/assetUrl';
 
 export default function StudentProfile({ profile, onEditProfile }) {
   const details = [
@@ -25,7 +26,7 @@ export default function StudentProfile({ profile, onEditProfile }) {
           <div className="relative shrink-0 group">
             <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-cyan-400/40 p-1 bg-slate-900 shadow-xl shadow-cyan-500/10 relative">
               <img
-                src={profile.photo ? (profile.photo.startsWith('/') || profile.photo.startsWith('data:') || profile.photo.startsWith('http') ? profile.photo : `/${profile.photo}`) : "/sandya.jpeg"}
+                src={getAssetUrl(profile.photo || 'sandya.jpeg')}
                 alt={profile.name}
                 className="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
               />

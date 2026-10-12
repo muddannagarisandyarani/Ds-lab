@@ -1,3 +1,5 @@
+import { getAssetUrl } from '../utils/assetUrl';
+
 export const initialProfile = {
   name: "M. Sandya Rani",
   rollNo: "24102A030063",
@@ -6,7 +8,7 @@ export const initialProfile = {
   assistantProfessor: "S.Bosubabu",
   professor: "S.Bosubabu",
   quote: "Small steps every day lead to big results.",
-  photo: "/sandya.jpeg",
+  photo: getAssetUrl("sandya.jpeg"),
   github: "",
   linkedin: ""
 };
@@ -180,7 +182,7 @@ export const initialModules = [
         size: "5.9 MB",
         rawSize: 6190667,
         date: "2026-03-01",
-        url: "/modules/DSModules.pdf"
+        url: getAssetUrl("modules/DSModules.pdf")
       }
     ],
     summary: "Master fundamental data wrangling skills. Learn how to ingest structured and unstructured datasets, resolve missing values, normalize scales, and prepare feature sets ready for machine learning algorithms."
@@ -213,7 +215,7 @@ export const initialModules = [
         size: "5.9 MB",
         rawSize: 6190667,
         date: "2026-03-01",
-        url: "/modules/DSModules.pdf"
+        url: getAssetUrl("modules/DSModules.pdf")
       }
     ],
     summary: "Learn to uncover hidden patterns and stories in data. Master statistical summary techniques and high-impact visualizations including distributions, scatter plots, pairplots, and heatmaps."
@@ -246,7 +248,7 @@ export const initialModules = [
         size: "5.9 MB",
         rawSize: 6190667,
         date: "2026-03-01",
-        url: "/modules/DSModules.pdf"
+        url: getAssetUrl("modules/DSModules.pdf")
       }
     ],
     summary: "Explore classical AI algorithms for classification, regression, and clustering. Build end-to-end predictive models using Scikit-Learn with cross-validation and hyperparameter tuning."
@@ -279,7 +281,7 @@ export const initialModules = [
         size: "5.9 MB",
         rawSize: 6190667,
         date: "2026-03-01",
-        url: "/modules/DSModules.pdf"
+        url: getAssetUrl("modules/DSModules.pdf")
       }
     ],
     summary: "Dive deep into modern neural network architectures. Learn how backpropagation works, build CNN models for image processing, and analyze sequential text/time-series data with RNNs."
@@ -312,7 +314,7 @@ export const initialModules = [
         size: "5.9 MB",
         rawSize: 6190667,
         date: "2026-03-01",
-        url: "/modules/DSModules.pdf"
+        url: getAssetUrl("modules/DSModules.pdf")
       }
     ],
     summary: "Bridge theory and industry practice. Solve end-to-end industry case studies, tackle imbalanced data, build recommender engines, and deploy models to web endpoints."
