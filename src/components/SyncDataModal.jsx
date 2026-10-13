@@ -150,7 +150,7 @@ export default function SyncDataModal({
             </p>
             <div className="pt-1 flex items-center gap-2 text-[11px] text-emerald-400 font-semibold">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>Fixed: The official course PDF (DSModules.pdf - 5.9 MB) is now permanently bundled directly into the website so every visitor sees it!</span>
+              <span>Fixed: The 5 official module PDFs are now permanently bundled directly into the website so every visitor sees each module's own notes!</span>
             </div>
           </div>
 
@@ -280,7 +280,7 @@ export default function SyncDataModal({
               </div>
               <button
                 onClick={() => {
-                  if (window.confirm("Reload default bundled content? This will refresh all 5 modules with DSModules.pdf.")) {
+                  if (window.confirm("Reload default bundled content? This will refresh all 5 modules with their dedicated module PDFs.")) {
                     if (onResetToDefaults) onResetToDefaults();
                     onClose();
                   }

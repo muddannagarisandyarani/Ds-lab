@@ -74,7 +74,12 @@ export default function App() {
   const [modules, setModules] = useState(() => {
     try {
       const deletedIds = getDeletedModuleIds();
-      const saved = localStorage.getItem('ds_lab_modules_v11');
+      // Remove deprecated cache versions
+      try {
+        localStorage.removeItem('ds_lab_modules_v11');
+      } catch (_e) {}
+
+      const saved = localStorage.getItem('ds_lab_modules_v12');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -83,7 +88,10 @@ export default function App() {
             if (found) {
               const bundledRes = initMod.resources || [];
               const userRes = (found.resources || []).filter(
-                r => !bundledRes.some(br => (br.url && br.url === r.url) || br.name === r.name)
+                r => !bundledRes.some(br => (br.url && br.url === r.url) || br.name === r.name) &&
+                     !r.url?.includes('DSModules.pdf') &&
+                     !r.name?.includes('DSModules') &&
+                     !r.id?.startsWith('pdf-ds-unit-')
               );
               return {
                 ...initMod,
@@ -195,7 +203,7 @@ export default function App() {
           url: r.url || null
         }))
       }));
-      localStorage.setItem('ds_lab_modules_v11', JSON.stringify(safeModules));
+      localStorage.setItem('ds_lab_modules_v12', JSON.stringify(safeModules));
     } catch (err) {
       console.warn('localStorage save warning (quota protected):', err);
     }
@@ -303,7 +311,8 @@ export default function App() {
     try {
       localStorage.removeItem('ds_lab_deleted_module_ids');
       localStorage.removeItem('ds_lab_modules_clean_standard_v8');
-      localStorage.setItem('ds_lab_modules_v11', JSON.stringify(initialModules));
+      localStorage.removeItem('ds_lab_modules_v11');
+      localStorage.setItem('ds_lab_modules_v12', JSON.stringify(initialModules));
     } catch (_e) {
       // Ignore
     }
@@ -334,6 +343,7 @@ export default function App() {
       localStorage.removeItem('ds_lab_modules');
       localStorage.removeItem('ds_lab_modules_clean_standard_v8');
       localStorage.removeItem('ds_lab_modules_v11');
+      localStorage.removeItem('ds_lab_modules_v12');
     } catch (_e) {}
     setModules(initialModules);
     setExperiments(initialExperiments);

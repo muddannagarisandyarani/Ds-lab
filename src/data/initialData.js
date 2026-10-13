@@ -177,12 +177,12 @@ export const initialModules = [
       {
         id: "pdf-ds-unit-1",
         moduleId: "mod-1",
-        name: "Unit 1: Introduction to Data Science Material.pdf",
+        name: "Module 1: Introduction to Data Science Material.pdf",
         type: "pdf",
-        size: "5.9 MB",
-        rawSize: 6190667,
+        size: "900 KB",
+        rawSize: 900349,
         date: "2026-03-01",
-        url: getAssetUrl("modules/DSModules.pdf")
+        url: getAssetUrl("modules/Module1_Introduction.pdf")
       }
     ],
     summary: "Master fundamental data wrangling skills. Learn how to ingest structured and unstructured datasets, resolve missing values, normalize scales, and prepare feature sets ready for machine learning algorithms."
@@ -210,12 +210,12 @@ export const initialModules = [
       {
         id: "pdf-ds-unit-2",
         moduleId: "mod-2",
-        name: "Unit 2: Data Extraction & Feature Selection Material.pdf",
+        name: "Module 2: Data Extraction & Feature Selection Material.pdf",
         type: "pdf",
-        size: "5.9 MB",
-        rawSize: 6190667,
+        size: "1.2 MB",
+        rawSize: 1189659,
         date: "2026-03-01",
-        url: getAssetUrl("modules/DSModules.pdf")
+        url: getAssetUrl("modules/Module2_Data_Extraction.pdf")
       }
     ],
     summary: "Learn to uncover hidden patterns and stories in data. Master statistical summary techniques and high-impact visualizations including distributions, scatter plots, pairplots, and heatmaps."
@@ -243,12 +243,12 @@ export const initialModules = [
       {
         id: "pdf-ds-unit-3",
         moduleId: "mod-3",
-        name: "Unit 3: Data Visualization & Matplotlib Primer.pdf",
+        name: "Module 3: Data Visualization & Matplotlib Primer.pdf",
         type: "pdf",
-        size: "5.9 MB",
-        rawSize: 6190667,
+        size: "1.4 MB",
+        rawSize: 1405939,
         date: "2026-03-01",
-        url: getAssetUrl("modules/DSModules.pdf")
+        url: getAssetUrl("modules/Module3_Plotting_Visualization.pdf")
       }
     ],
     summary: "Explore classical AI algorithms for classification, regression, and clustering. Build end-to-end predictive models using Scikit-Learn with cross-validation and hyperparameter tuning."
@@ -276,12 +276,12 @@ export const initialModules = [
       {
         id: "pdf-ds-unit-4",
         moduleId: "mod-4",
-        name: "Unit 4: Statistical Thinking & Distributions Material.pdf",
+        name: "Module 4: Statistical Thinking & Distributions Material.pdf",
         type: "pdf",
-        size: "5.9 MB",
-        rawSize: 6190667,
+        size: "1.8 MB",
+        rawSize: 1811060,
         date: "2026-03-01",
-        url: getAssetUrl("modules/DSModules.pdf")
+        url: getAssetUrl("modules/Module4_Statistical_Thinking.pdf")
       }
     ],
     summary: "Dive deep into modern neural network architectures. Learn how backpropagation works, build CNN models for image processing, and analyze sequential text/time-series data with RNNs."
@@ -309,12 +309,12 @@ export const initialModules = [
       {
         id: "pdf-ds-unit-5",
         moduleId: "mod-5",
-        name: "Unit 5: Time Series Analysis & Predictive Modeling Material.pdf",
+        name: "Module 5: Time Series Analysis & Predictive Modeling Material.pdf",
         type: "pdf",
-        size: "5.9 MB",
-        rawSize: 6190667,
+        size: "982 KB",
+        rawSize: 982290,
         date: "2026-03-01",
-        url: getAssetUrl("modules/DSModules.pdf")
+        url: getAssetUrl("modules/Module5_Time_Series_Predictive_Modeling.pdf")
       }
     ],
     summary: "Bridge theory and industry practice. Solve end-to-end industry case studies, tackle imbalanced data, build recommender engines, and deploy models to web endpoints."
