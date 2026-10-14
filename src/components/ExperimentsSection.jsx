@@ -3,7 +3,8 @@ import {
   FlaskConical, Search, Plus, Folder, FileCode, Play, Copy, Check,
   RefreshCw, Terminal, Table as TableIcon, BarChart, Code2, AlertCircle,
   Trash2, Pencil, Save, Share2, ExternalLink, Download, Maximize2, X,
-  CheckCircle2, AlertTriangle, Layers, Info, Sparkles, ChevronDown, ChevronUp
+  CheckCircle2, AlertTriangle, Layers, Info, Sparkles, ChevronDown, ChevronUp,
+  Database
 } from 'lucide-react';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement,
@@ -217,6 +218,8 @@ export default function ExperimentsSection({
       // If unmodified original sub-experiment code, use verified output & plots
       if (activeSubExp && codeStr.trim() === (activeSubExp.code || '').trim()) {
         setCustomConsoleOutput(activeSubExp.consoleOutput || '');
+        setCustomTableData(activeSubExp.tableData || null);
+        setCustomChartData(activeSubExp.chartData || null);
         setCustomPlots(activeSubExp.plots || []);
         setExecutionMeta({ exitCode: 0, status: 'Verified Execution' });
         setIsRunning(false);
@@ -858,6 +861,114 @@ export default function ExperimentsSection({
                   <pre className="p-3.5 rounded-xl bg-[#030712] border border-slate-800/90 text-emerald-400 text-xs overflow-x-auto whitespace-pre-wrap leading-relaxed shadow-inner">
                     {customConsoleOutput || '[INFO] Ready to execute code. Click "Run Code" above.'}
                   </pre>
+
+                  {/* Generated File Output Card (JSON / Excel) */}
+                  {activeSubExp?.generatedFile && (
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-slate-950 via-[#0b152d] to-slate-950 border border-cyan-500/30 shadow-lg space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+                        <div className="flex items-center space-x-2.5">
+                          <div className="p-2 rounded-lg bg-cyan-950/80 border border-cyan-500/40 text-cyan-400">
+                            {activeSubExp.generatedFile.fileType === 'excel' ? (
+                              <TableIcon className="w-4 h-4 text-emerald-400" />
+                            ) : (
+                              <FileCode className="w-4 h-4 text-cyan-400" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <span className="font-bold text-white text-xs">{activeSubExp.generatedFile.filename}</span>
+                              <span className="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase bg-cyan-950 text-cyan-300 border border-cyan-500/40">
+                                {activeSubExp.generatedFile.fileType === 'excel' ? 'Excel Spreadsheet (.xlsx)' : 'JSON File (.json)'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 mt-0.5">{activeSubExp.generatedFile.description}</p>
+                          </div>
+                        </div>
+
+                        <a
+                          href={activeSubExp.generatedFile.url}
+                          download={activeSubExp.generatedFile.filename}
+                          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 transition-all cursor-pointer self-start sm:self-auto shrink-0"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Download {activeSubExp.generatedFile.filename}</span>
+                        </a>
+                      </div>
+
+                      {/* JSON Content Preview */}
+                      {activeSubExp.generatedFile.content && (
+                        <div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center justify-between">
+                            <span>File Content Preview ({activeSubExp.generatedFile.filename}):</span>
+                            <span className="text-cyan-400 font-mono text-[9px]">UTF-8 Indented JSON</span>
+                          </div>
+                          <pre className="p-3 rounded-lg bg-[#030712] border border-slate-800 text-cyan-300 text-[11px] overflow-x-auto max-h-48 whitespace-pre font-mono">
+                            {activeSubExp.generatedFile.content}
+                          </pre>
+                        </div>
+                      )}
+
+                      {/* Excel Sheet Info */}
+                      {activeSubExp.generatedFile.sheetName && (
+                        <div className="flex items-center justify-between text-[11px] bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800 text-slate-300">
+                          <span>Worksheet Tab: <strong className="text-emerald-400">{activeSubExp.generatedFile.sheetName}</strong></span>
+                          <span className="text-slate-400">Library: <strong className="text-slate-200">openpyxl</strong></span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* SQLite Database Connection & Transaction Inspector */}
+                  {activeSubExp?.databaseConfig && (
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-slate-950 via-[#071329] to-slate-950 border border-blue-500/30 shadow-lg space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+                        <div className="flex items-center space-x-2.5">
+                          <div className="p-2 rounded-lg bg-blue-950/80 border border-blue-500/40 text-blue-400">
+                            <Database className="w-4 h-4 text-cyan-400" />
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <span className="font-bold text-white text-xs">{activeSubExp.databaseConfig.dbName}</span>
+                              <span className="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase bg-emerald-950 text-emerald-300 border border-emerald-500/40 flex items-center space-x-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span>Safe SQLite3 Connection</span>
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 mt-0.5">
+                              Table: <strong className="text-cyan-300">{activeSubExp.databaseConfig.table}</strong> ({activeSubExp.databaseConfig.schema})
+                            </p>
+                          </div>
+                        </div>
+                        <div className="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-[10px] text-cyan-300 font-mono">
+                          Engine: {activeSubExp.databaseConfig.engine}
+                        </div>
+                      </div>
+
+                      {/* Operations Timeline */}
+                      {activeSubExp.databaseConfig.operations && (
+                        <div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                            SQL Execution Pipeline & Transaction Trace:
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                            {activeSubExp.databaseConfig.operations.map((op) => (
+                              <div key={op.step} className="p-2 rounded-lg bg-slate-900/90 border border-slate-800 text-[10px] flex flex-col justify-between">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 font-mono font-bold text-[9px]">
+                                    Step {op.step}: {op.action}
+                                  </span>
+                                  <span className="text-emerald-400 font-bold text-[9px]">{op.status}</span>
+                                </div>
+                                <code className="text-slate-300 font-mono truncate text-[9px] bg-slate-950 p-1 rounded border border-slate-800/80" title={op.detail}>
+                                  {op.detail}
+                                </code>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Inline Charts Link if plots exist */}
                   {customPlots && customPlots.length > 0 && (

@@ -287,10 +287,21 @@ export function executePythonEngine(codeStr, expTitle = "", fallbackOutput = "")
     }
 
     // File writing simulation
-    if (trimmed.includes('.to_csv(') || (trimmed.includes('open(') && trimmed.includes('write'))) {
-      const fileMatch = trimmed.match(/['"]([\w./\\]+\.(?:csv|txt|json|dat))['"]/);
-      const filename = fileMatch ? fileMatch[1] : 'dataset_export.csv';
+    if (trimmed.includes('.to_csv(') || trimmed.includes('.to_json(') || trimmed.includes('.to_excel(') || (trimmed.includes('open(') && trimmed.includes('write'))) {
+      const fileMatch = trimmed.match(/['"]([\w./\\]+\.(?:csv|txt|json|xlsx|xls|dat|db))['"]/);
+      const filename = fileMatch ? fileMatch[1] : (trimmed.includes('.to_json(') ? 'students.json' : trimmed.includes('.to_excel(') ? 'Students.xlsx' : 'dataset_export.csv');
       printOutputs.push(`[FILE I/O] Output successfully saved to ${filename}`);
+    }
+
+    // SQL Query simulation
+    if ((trimmed.includes('read_sql_query') || trimmed.includes('sqlite3.connect')) && !dataFrames['df']) {
+      if (codeStr.includes('Students') || codeStr.includes('students')) {
+        const sqlHeaders = ["id", "name"];
+        const sqlRows = [[1, "John"]];
+        dataFrames['df'] = { headers: sqlHeaders, rows: sqlRows };
+        customHeaders = sqlHeaders;
+        customRows = sqlRows;
+      }
     }
   });
 

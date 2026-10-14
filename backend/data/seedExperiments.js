@@ -15,6 +15,58 @@ module.exports = [
         "outputType": "console",
         "consoleOutput": "First five rows of the dataset:\n   sepal_length  sepal_width  petal_length  petal_width species\n0           5.1          3.5           1.4          0.2  setosa\n1           4.9          3.0           1.4          0.2  setosa\n2           4.7          3.2           1.3          0.2  setosa\n3           4.6          3.1           1.5          0.2  setosa\n4           5.0          3.6           1.4          0.2  setosa\n\nDataset Information:\n<class 'pandas.DataFrame'>\nRangeIndex: 150 entries, 0 to 149\nData columns (total 5 columns):\n #   Column        Non-Null Count  Dtype  \n---  ------        --------------  -----  \n 0   sepal_length  150 non-null    float64\n 1   sepal_width   150 non-null    float64\n 2   petal_length  150 non-null    float64\n 3   petal_width   150 non-null    float64\n 4   species       150 non-null    str    \ndtypes: float64(4), str(1)\nmemory usage: 7.2 KB\nNone\n\nNumber of rows and columns:\n(150, 5)\n\n[STATUS] Execution Completed (Exit Code: 0)",
         "plots": []
+      },
+      {
+        "id": "sub-1b",
+        "codeNum": "1b",
+        "title": "1B – Generating JSON Files",
+        "githubUrl": "https://github.com/muddannagarisandyarani/DS/blob/main/program1b-1.py",
+        "code": "import pandas as pd\nstudent_data = {\n    \"Roll_No\": [101, 102, 103, 104],\n    \"Name\": [\"Anusha\", \"Babitha\", \"Charitha\", \"Deepika\"],\n    \"Department\": [\"IT\", \"IT\", \"CSE\", \"ECE\"],\n    \"Marks\": [89, 92, 88, 95]\n}\ndf = pd.DataFrame(student_data)\ndf.to_json(\n    \"students.json\",\n    orient=\"records\",\n    indent=4\n)\nprint(\"JSON file created successfully.\")",
+        "outputType": "console",
+        "consoleOutput": "JSON file created successfully.\n\n[STATUS] Execution Completed (Exit Code: 0)",
+        "generatedFile": {
+          "filename": "students.json",
+          "fileType": "json",
+          "url": "/generated/students.json",
+          "description": "JSON dataset exported with records orientation and 4-space indentation",
+          "content": "[\n    {\n        \"Roll_No\": 101,\n        \"Name\": \"Anusha\",\n        \"Department\": \"IT\",\n        \"Marks\": 89\n    },\n    {\n        \"Roll_No\": 102,\n        \"Name\": \"Babitha\",\n        \"Department\": \"IT\",\n        \"Marks\": 92\n    },\n    {\n        \"Roll_No\": 103,\n        \"Name\": \"Charitha\",\n        \"Department\": \"CSE\",\n        \"Marks\": 88\n    },\n    {\n        \"Roll_No\": 104,\n        \"Name\": \"Deepika\",\n        \"Department\": \"ECE\",\n        \"Marks\": 95\n    }\n]"
+        },
+        "tableData": {
+          "headers": ["Roll_No", "Name", "Department", "Marks"],
+          "rows": [
+            [101, "Anusha", "IT", 89],
+            [102, "Babitha", "IT", 92],
+            [103, "Charitha", "CSE", 88],
+            [104, "Deepika", "ECE", 95]
+          ]
+        },
+        "plots": []
+      },
+      {
+        "id": "sub-1c",
+        "codeNum": "1c",
+        "title": "1C – Writing Data to an Excel File",
+        "githubUrl": "https://github.com/muddannagarisandyarani/DS/blob/main/program1c-1.py",
+        "code": "import pandas as pd\nstudent_data = {\n    \"Roll No\": [101, 102, 103, 104],\n    \"Name\": [\"Anusha\", \"Babitha\", \"Charitha\", \"Deepika\"],\n    \"Department\": [\"IT\", \"IT\", \"CSE\", \"ECE\"],\n    \"Percentage\": [89, 92, 88, 85]\n}\ndf = pd.DataFrame(student_data)\ndf.to_excel(\"Students.xlsx\", sheet_name=\"Student Details\", index=False)\nprint(\"Data successfully written to Students.xlsx\")",
+        "outputType": "console",
+        "consoleOutput": "Data successfully written to Students.xlsx\n\n[STATUS] Execution Completed (Exit Code: 0)",
+        "generatedFile": {
+          "filename": "Students.xlsx",
+          "fileType": "excel",
+          "sheetName": "Student Details",
+          "url": "/generated/Students.xlsx",
+          "description": "Excel workbook exported using openpyxl engine with sheet tab 'Student Details'"
+        },
+        "tableData": {
+          "headers": ["Roll No", "Name", "Department", "Percentage"],
+          "rows": [
+            [101, "Anusha", "IT", 89],
+            [102, "Babitha", "IT", 92],
+            [103, "Charitha", "CSE", 88],
+            [104, "Deepika", "ECE", 85]
+          ]
+        },
+        "plots": []
       }
     ]
   },
@@ -33,6 +85,39 @@ module.exports = [
         "code": "import requests\nimport pandas as pd\nurl = \"https://api.github.com/repos/pandas-dev/pandas/issues\"\nresponse = requests.get(url)\nissues = response.json()\ndf_issues = pd.DataFrame(issues)\nprint(df_issues[[\"id\", \"title\", \"state\", \"created_at\"]].head(30))",
         "outputType": "console",
         "consoleOutput": "id  ...            created_at\n0   5848012326  ...  2026-10-14T12:44:31Z\n1   5845542782  ...  2026-10-14T09:43:48Z\n2   5843411693  ...  2026-10-14T06:58:51Z\n3   5842452093  ...  2026-10-14T05:25:34Z\n4   5842347612  ...  2026-10-14T05:13:57Z\n5   5842057367  ...  2026-10-14T04:41:25Z\n6   5836858562  ...  2026-10-13T20:00:35Z\n7   5833878474  ...  2026-10-13T16:22:56Z\n8   5823196977  ...  2026-10-13T01:58:24Z\n9   5821263660  ...  2026-10-12T22:22:40Z\n10  5820631198  ...  2026-10-12T21:24:16Z\n11  5820102631  ...  2026-10-12T20:37:25Z\n12  5819988547  ...  2026-10-12T20:27:21Z\n13  5819825100  ...  2026-10-12T20:13:11Z\n14  5819823957  ...  2026-10-12T20:13:05Z\n15  5819707563  ...  2026-10-12T20:02:54Z\n16  5819680288  ...  2026-10-12T20:00:40Z\n17  5818401698  ...  2026-10-12T18:15:25Z\n18  5817003599  ...  2026-10-12T16:22:18Z\n19  5810886467  ...  2026-10-12T08:44:52Z\n20  5804431276  ...  2026-10-11T19:32:24Z\n21  5804184657  ...  2026-10-11T19:03:25Z\n22  5804111390  ...  2026-10-11T18:54:10Z\n23  5802072401  ...  2026-10-11T14:42:35Z\n24  5801833876  ...  2026-10-11T14:12:03Z\n25  5800129377  ...  2026-10-11T10:14:44Z\n26  5799820380  ...  2026-10-11T09:29:54Z\n27  5799547646  ...  2026-10-11T08:50:24Z\n28  5799383822  ...  2026-10-11T08:26:05Z\n29  5799380584  ...  2026-10-11T08:25:36Z\n\n[30 rows x 4 columns]\n\n[STATUS] Execution Completed (Exit Code: 0)",
+        "plots": []
+      },
+      {
+        "id": "sub-2b",
+        "codeNum": "2b",
+        "title": "2B – Connecting Python with SQL Databases",
+        "githubUrl": "https://github.com/muddannagarisandyarani/DS/blob/main/program2b-1.py",
+        "code": "import sqlite3\nimport pandas as pd\n# Connect to database\nconn = sqlite3.connect(\"students.db\")\ncursor = conn.cursor()\n# Create table\ncursor.execute(\"\"\"\nCREATE TABLE IF NOT EXISTS Students (\n    id INTEGER,\n    name TEXT\n)\n\"\"\")\n# Insert data\ncursor.execute(\"INSERT INTO Students VALUES (1, 'John')\")\nconn.commit()\n# Read data\ndf = pd.read_sql_query(\"SELECT * FROM Students\", conn)\nprint(df)\n# Update data\ncursor.execute(\"UPDATE Students SET name='Alice' WHERE id=1\")\n# Delete data\ncursor.execute(\"DELETE FROM Students WHERE id=1\")\nconn.commit()\nconn.close()",
+        "outputType": "console",
+        "consoleOutput": "   id  name\n0   1  John\n\n[STATUS] Execution Completed (Exit Code: 0)",
+        "databaseConfig": {
+          "dbName": "students.db",
+          "engine": "SQLite3 (Safe Local Sandbox)",
+          "table": "Students",
+          "schema": "id INTEGER, name TEXT",
+          "connectionStatus": "Safe Connection Established (Local/In-Memory)",
+          "operations": [
+            { "step": 1, "action": "CONNECT", "detail": "sqlite3.connect('students.db')", "status": "SUCCESS" },
+            { "step": 2, "action": "CREATE TABLE", "detail": "CREATE TABLE IF NOT EXISTS Students (id INTEGER, name TEXT)", "status": "SUCCESS" },
+            { "step": 3, "action": "INSERT", "detail": "INSERT INTO Students VALUES (1, 'John')", "status": "SUCCESS" },
+            { "step": 4, "action": "COMMIT", "detail": "conn.commit()", "status": "SUCCESS" },
+            { "step": 5, "action": "QUERY", "detail": "pd.read_sql_query('SELECT * FROM Students', conn)", "status": "1 row returned" },
+            { "step": 6, "action": "UPDATE", "detail": "UPDATE Students SET name='Alice' WHERE id=1", "status": "SUCCESS" },
+            { "step": 7, "action": "DELETE", "detail": "DELETE FROM Students WHERE id=1", "status": "SUCCESS" },
+            { "step": 8, "action": "CLOSE", "detail": "conn.close()", "status": "CLOSED SAFELY" }
+          ]
+        },
+        "tableData": {
+          "headers": ["id", "name"],
+          "rows": [
+            [1, "John"]
+          ]
+        },
         "plots": []
       }
     ]
