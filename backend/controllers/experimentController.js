@@ -251,3 +251,106 @@ exports.batchMigrate = async (req, res) => {
     res.status(500).json({ success: false, message: 'Batch migration failed' });
   }
 };
+
+// @desc    Execute Python code on server, capture stdout, stderr, and generated plots
+// @route   POST /api/experiments/execute-python
+exports.executePython = async (req, res) => {
+  const { code, input = '' } = req.body;
+  if (!code || typeof code !== 'string') {
+    return res.status(400).json({ success: false, message: 'Python code string is required' });
+  }
+
+  const { spawn } = require('child_process');
+  const fs = require('fs');
+  const path = require('path');
+  const os = require('os');
+
+  const tmpDir = os.tmpdir();
+  const scriptFile = path.join(tmpDir, `ds_run_${Date.now()}_${Math.random().toString(36).substring(7)}.py`);
+
+  const wrapped = `import sys
+import os
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import io
+import base64
+
+saved_plots = []
+_orig_show = plt.show
+
+def custom_show(*args, **kwargs):
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight')
+    buf.seek(0)
+    saved_plots.append(base64.b64encode(buf.read()).decode('utf-8'))
+    plt.close()
+
+plt.show = custom_show
+
+# Execute User Code
+${code}
+
+if plt.get_fignums():
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight')
+    buf.seek(0)
+    saved_plots.append(base64.b64encode(buf.read()).decode('utf-8'))
+    plt.close('all')
+
+if saved_plots:
+    for idx, p in enumerate(saved_plots):
+        print(f"\\n__PLOT_B64_{idx}__:" + p)
+`;
+
+  try {
+    fs.writeFileSync(scriptFile, wrapped, 'utf8');
+
+    const pyProcess = spawn('python', [scriptFile], { timeout: 25000 });
+
+    let stdoutData = '';
+    let stderrData = '';
+
+    if (input) {
+      pyProcess.stdin.write(input + '\n');
+      pyProcess.stdin.end();
+    }
+
+    pyProcess.stdout.on('data', (d) => { stdoutData += d.toString(); });
+    pyProcess.stderr.on('data', (d) => { stderrData += d.toString(); });
+
+    pyProcess.on('close', (exitCode) => {
+      try { fs.unlinkSync(scriptFile); } catch (_e) {}
+
+      const plots = [];
+      const cleanStdoutLines = [];
+      const lines = stdoutData.split(/\r?\n/);
+      for (const line of lines) {
+        if (line.startsWith('__PLOT_B64_')) {
+          const parts = line.split(':');
+          if (parts.length >= 2) {
+            plots.push('data:image/png;base64,' + parts.slice(1).join(':'));
+          }
+        } else {
+          cleanStdoutLines.push(line);
+        }
+      }
+
+      res.status(200).json({
+        success: exitCode === 0,
+        output: cleanStdoutLines.join('\n').trim(),
+        stderr: stderrData.trim(),
+        exitCode,
+        plots
+      });
+    });
+
+    pyProcess.on('error', (err) => {
+      try { fs.unlinkSync(scriptFile); } catch (_e) {}
+      res.status(500).json({ success: false, message: 'Failed to launch python: ' + err.message });
+    });
+  } catch (err) {
+    try { fs.unlinkSync(scriptFile); } catch (_e) {}
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

@@ -8,12 +8,14 @@ const {
   updateSubExperiment,
   deleteExperiment,
   deleteSubExperiment,
-  batchMigrate
+  batchMigrate,
+  executePython
 } = require('../controllers/experimentController');
 
 router.get('/', getExperiments);
 router.post('/', createExperiment);
 router.post('/batch-migrate', batchMigrate);
+router.post('/execute-python', executePython);
 router.get('/:id', getExperimentById);
 router.put('/:id', updateExperiment);
 router.put('/:id/sub/:subId', updateSubExperiment);

@@ -90,3 +90,11 @@ export async function migrateLocalExperimentsApi(localList) {
     body: JSON.stringify({ localExperiments: localList })
   });
 }
+
+// Execute Python code on backend server
+export async function executePythonApi(code, input = '') {
+  return request('/experiments/execute-python', {
+    method: 'POST',
+    body: JSON.stringify({ code, input })
+  });
+}

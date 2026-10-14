@@ -9,7 +9,8 @@ const SubExperimentSchema = new mongoose.Schema({
   outputType: { type: String, default: 'console' },
   consoleOutput: { type: String, default: '' },
   tableData: { type: mongoose.Schema.Types.Mixed, default: null },
-  chartData: { type: mongoose.Schema.Types.Mixed, default: null }
+  chartData: { type: mongoose.Schema.Types.Mixed, default: null },
+  plots: { type: [mongoose.Schema.Types.Mixed], default: [] }
 }, { _id: false });
 
 const ExperimentSchema = new mongoose.Schema({

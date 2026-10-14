@@ -41,8 +41,8 @@ export default function App() {
         assistantProfessor: parsed.assistantProfessor || parsed.professor || initialProfile.assistantProfessor,
         professor: parsed.professor || parsed.assistantProfessor || initialProfile.professor,
         photo: parsed.photo || initialProfile.photo,
-        github: parsed.github !== undefined ? parsed.github : (initialProfile.github || ''),
-        linkedin: parsed.linkedin !== undefined ? parsed.linkedin : (initialProfile.linkedin || '')
+        github: (parsed.github && parsed.github.trim() !== '' && parsed.github.startsWith('http')) ? parsed.github : initialProfile.github,
+        linkedin: (parsed.linkedin && parsed.linkedin.trim() !== '' && parsed.linkedin.startsWith('http')) ? parsed.linkedin : initialProfile.linkedin
       };
     } catch (_err) {
       return initialProfile;
@@ -116,20 +116,25 @@ export default function App() {
   // Local fallback / cache getter for experiments
   const getMergedExperiments = useCallback(() => {
     try {
-      const savedStr = localStorage.getItem('ds_lab_experiments');
       const deletedStr = localStorage.getItem('ds_lab_deleted_ids');
       const deletedIds = deletedStr ? JSON.parse(deletedStr) : [];
 
+      // Check versioned cache (v2 includes all 7 experiments & 20 sub-experiments)
+      const savedStr = localStorage.getItem('ds_lab_experiments_v2');
       if (!savedStr) {
+        // Clear deprecated legacy cache to avoid stale experiments
+        try { localStorage.removeItem('ds_lab_experiments'); } catch (_e) {}
         return initialExperiments.filter(e => !deletedIds.includes(e.id));
       }
 
       const saved = JSON.parse(savedStr);
-      if (!Array.isArray(saved)) return initialExperiments;
+      if (!Array.isArray(saved) || saved.length < 7) {
+        return initialExperiments.filter(e => !deletedIds.includes(e.id));
+      }
 
       const mergedMap = new Map();
 
-      // Start with initialExperiments so all 5 standard experiments exist
+      // Start with initialExperiments so all 7 standard experiments exist
       initialExperiments.forEach(initExp => {
         if (!deletedIds.includes(initExp.id)) {
           mergedMap.set(initExp.id, initExp);
@@ -145,7 +150,15 @@ export default function App() {
             const existingExp = mergedMap.get(exp.id);
             const subMap = new Map();
             (existingExp.subExperiments || []).forEach(sub => subMap.set(sub.id, sub));
-            (exp.subExperiments || []).forEach(sub => subMap.set(sub.id, sub));
+            (exp.subExperiments || []).forEach(sub => {
+              const origSub = subMap.get(sub.id);
+              subMap.set(sub.id, {
+                ...origSub,
+                ...sub,
+                githubUrl: origSub?.githubUrl || sub.githubUrl,
+                plots: (origSub?.plots && origSub.plots.length > 0) ? origSub.plots : (sub.plots || [])
+              });
+            });
 
             mergedMap.set(exp.id, {
               ...existingExp,
@@ -211,7 +224,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('ds_lab_experiments', JSON.stringify(experiments));
+      localStorage.setItem('ds_lab_experiments_v2', JSON.stringify(experiments));
     } catch (_err) {
       // Ignore
     }
@@ -224,7 +237,7 @@ export default function App() {
       if (Array.isArray(data) && data.length > 0) {
         setExperiments(data);
         try {
-          localStorage.setItem('ds_lab_experiments', JSON.stringify(data));
+          localStorage.setItem('ds_lab_experiments_v2', JSON.stringify(data));
         } catch (_e) {
           // Ignore
         }

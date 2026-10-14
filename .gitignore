@@ -25,3 +25,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Helper scripts
+downloaded_programs/
+*.py
+generated_experiments.json
