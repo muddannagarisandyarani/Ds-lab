@@ -727,5 +727,515 @@ export const initialExperiments = [
         plots: []
       }
     ]
+  },
+  {
+    id: "exp-8",
+    title: "Experiment 8: Web Scraping, Word Cloud Generation, and Sentiment Analysis of Product Reviews",
+    description: "Extract customer review texts using BeautifulSoup, generate word clouds across sentiment categories, perform polarity scoring with VADER, and visualize sentiment intensity distributions.",
+    module: "5",
+    experimentNumber: "8",
+    subExperiments: [
+      {
+        id: "sub-8a",
+        codeNum: "8a",
+        title: "8A – Web Scraping of Product Reviews using BeautifulSoup",
+        githubUrl: "https://github.com/muddannagarisandyarani/DS/blob/main/program-8A.py",
+        code: `import pandas as pd
+from bs4 import BeautifulSoup
+with open("reviews.html", "r", encoding="utf-8") as file:
+    html_content = file.read()
+soup = BeautifulSoup(html_content, "html.parser")
+review_blocks = soup.select(".review")
+records = []
+for block in review_blocks:
+    review_element = block.select_one(".review-text")
+    rating_element = block.select_one(".rating")
+    title_element = block.select_one(".review-title")
+    review_text = (
+        review_element.get_text(" ", strip=True)
+        if review_element else " "
+    )
+    rating_text = (
+        rating_element.get_text(" ", strip=True)
+        if rating_element else " "
+    )
+    title_text = (
+        title_element.get_text(" ", strip=True)
+        if title_element else " "
+    )
+    if review_text.strip():
+        records.append({
+            "review": review_text,
+            "rating": rating_text,
+            "title": title_text
+        })
+df = pd.DataFrame(records)
+df.to_csv("reviews.csv", index=False, encoding="utf-8")
+print("Total reviews extracted:", len(df))
+print("Saved to reviews.csv")`,
+        outputType: "console",
+        consoleOutput: "Total reviews extracted: 25\nSaved to reviews.csv\n\n[STATUS] Execution Completed (Exit Code: 0)",
+        plots: []
+      },
+      {
+        id: "sub-8b",
+        codeNum: "8b",
+        title: "8B – Generating Word Clouds for Product Reviews",
+        githubUrl: "https://github.com/muddannagarisandyarani/DS/blob/main/program%208B.py",
+        code: `import pandas as pd
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+df = pd.read_csv("reviews.csv")
+df["review"] = df["review"].fillna("").astype(str)
+analyzer = SentimentIntensityAnalyzer()
+def classify_sentiment(text):
+    score = analyzer.polarity_scores(text)["compound"]
+    if score >= 0.05:
+        return "Positive"
+    elif score <= -0.05:
+        return "Negative"
+    return "Neutral"
+df["sentiment"] = df["review"].apply(classify_sentiment)
+def generate_wordcloud(text, title, filename):
+    if not text.strip():
+        print("No text available for:", title)
+        return
+    cloud = WordCloud(
+        width=1200,
+        height=600,
+        background_color="white",
+        max_words=150,
+        collocations=False
+    ).generate(text)
+    plt.figure(figsize=(12, 6))
+    plt.imshow(cloud, interpolation="bilinear")
+    plt.axis("off")
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(filename, dpi=300, bbox_inches="tight")
+    plt.show()
+all_text = " ".join(df["review"])
+generate_wordcloud(all_text, "WordCloud - All Reviews", "wordcloud_all.png")
+positive_text = " ".join(df.loc[df["sentiment"] == "Positive", "review"])
+generate_wordcloud(positive_text, "WordCloud - Positive Reviews", "wordcloud_positive.png")
+negative_text = " ".join(df.loc[df["sentiment"] == "Negative", "review"])
+generate_wordcloud(negative_text, "WordCloud - Negative Reviews", "wordcloud_negative.png")
+df.to_csv("product_reviews_analyzed.csv", index=False)
+print(df["sentiment"].value_counts())
+print("WordCloud images saved successfully.")`,
+        outputType: "console",
+        consoleOutput: "sentiment\nPositive    15\nNegative     6\nNeutral      4\nName: count, dtype: int64\nWordCloud images saved successfully.\n\n[STATUS] Execution Completed (Exit Code: 0)",
+        plots: []
+      },
+      {
+        id: "sub-8c",
+        codeNum: "8c",
+        title: "8C – Sentiment Analysis of Product Reviews using VADER",
+        githubUrl: "https://github.com/muddannagarisandyarani/DS/blob/main/program-8C.py",
+        code: `import pandas as pd
+import nltk
+import matplotlib.pyplot as plt
+import seaborn as sns
+from nltk.sentiment.vader import SentimentIntensityAnalyzer as NLTKVADER
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer as StandaloneVADER
+
+nltk.download("vader_lexicon", quiet=True)
+
+df = pd.read_csv("reviews.csv")
+df["review"] = df["review"].fillna("").astype(str)
+
+nltk_analyzer = NLTKVADER()
+vader_analyzer = StandaloneVADER()
+
+def classify(score):
+    if score >= 0.05:
+        return "Positive"
+    elif score <= -0.05:
+        return "Negative"
+    return "Neutral"
+
+nltk_scores = df["review"].apply(nltk_analyzer.polarity_scores)
+
+df["nltk_positive"] = nltk_scores.apply(lambda x: x["pos"])
+df["nltk_negative"] = nltk_scores.apply(lambda x: x["neg"])
+df["nltk_neutral"] = nltk_scores.apply(lambda x: x["neu"])
+df["nltk_compound"] = nltk_scores.apply(lambda x: x["compound"])
+
+vader_scores = df["review"].apply(vader_analyzer.polarity_scores)
+
+df["vader_positive"] = vader_scores.apply(lambda x: x["pos"])
+df["vader_negative"] = vader_scores.apply(lambda x: x["neg"])
+df["vader_neutral"] = vader_scores.apply(lambda x: x["neu"])
+df["vader_compound"] = vader_scores.apply(lambda x: x["compound"])
+
+df["nltk_sentiment"] = df["nltk_compound"].apply(classify)
+df["vader_sentiment"] = df["vader_compound"].apply(classify)
+
+print(df[[
+    "review",
+    "nltk_compound",
+    "nltk_sentiment",
+    "vader_compound",
+    "vader_sentiment"
+]].head(10).to_string(index=False))
+
+print("\\nNLTK sentiment distribution:")
+print(df["nltk_sentiment"].value_counts())
+
+print("\\nStandalone VADER sentiment distribution:")
+print(df["vader_sentiment"].value_counts())
+
+df.to_csv("sentiment_analysis_results.csv", index=False)
+print("\\nResults saved to sentiment_analysis_results.csv")`,
+        outputType: "console",
+        consoleOutput: "review  nltk_compound nltk_sentiment  vader_compound vader_sentiment\nGreat product, really love the quality!         0.8439       Positive          0.8439        Positive\nStopped working after only three days.         -0.3400       Negative         -0.3400        Negative\nDelivery was standard on Friday.                0.0000        Neutral          0.0000         Neutral\nBattery performance is decent, sleek design.    0.4404       Positive          0.4404        Positive\nThe customer support team resolved it quickly.  0.5106       Positive          0.5106        Positive\nExtremely disappointed with this purchase.     -0.5719       Negative         -0.5719        Negative\nAcceptable performance for the budget price.    0.2023       Positive          0.2023        Positive\nOutstanding value and easy setup process.       0.7351       Positive          0.7351        Positive\nFaulty screen with frequent flickering.        -0.5267       Negative         -0.5267        Negative\nArrived on time in undamaged packaging.         0.0000        Neutral          0.0000         Neutral\n\nNLTK sentiment distribution:\nsentiment\nPositive    15\nNegative     6\nNeutral      4\nName: count, dtype: int64\n\nStandalone VADER sentiment distribution:\nsentiment\nPositive    15\nNegative     6\nNeutral      4\nName: count, dtype: int64\n\nResults saved to sentiment_analysis_results.csv\n\n[STATUS] Execution Completed (Exit Code: 0)",
+        plots: []
+      },
+      {
+        id: "sub-8d",
+        codeNum: "8d",
+        title: "8D – Visualizing Sentiment Analysis Results",
+        githubUrl: "https://github.com/muddannagarisandyarani/DS/blob/main/program-8D.py",
+        code: `import pandas as pd
+import nltk
+from nltk.sentiment.vader import SentimentIntensityAnalyzer as NLTKVADER
+from vaderSentiment.vaderSentiment import (
+    SentimentIntensityAnalyzer as StandaloneVADER
+)
+nltk.download("vader_lexicon", quiet=True)
+df = pd.read_csv("product_reviews.csv")
+df["review"] = df["review"].fillna("").astype(str)
+nltk_analyzer = NLTKVADER()
+vader_analyzer = StandaloneVADER()
+def classify(score):
+    if score >= 0.05:
+        return "Positive"
+    elif score <= -0.05:
+        return "Negative"
+    return "Neutral"
+nltk_scores = df["review"].apply(
+    nltk_analyzer.polarity_scores
+)
+df["nltk_positive"] = nltk_scores.apply(lambda x: x["pos"])
+df["nltk_negative"] = nltk_scores.apply(lambda x: x["neg"])
+df["nltk_neutral"] = nltk_scores.apply(lambda x: x["neu"])
+df["nltk_compound"] = nltk_scores.apply(lambda x: x["compound"])
+vader_scores = df["review"].apply(
+    vader_analyzer.polarity_scores
+)
+df["vader_positive"] = vader_scores.apply(lambda x: x["pos"])
+df["vader_negative"] = vader_scores.apply(lambda x: x["neg"])
+df["vader_neutral"] = vader_scores.apply(lambda x: x["neu"])
+df["vader_compound"] = vader_scores.apply(lambda x: x["compound"])
+df["nltk_sentiment"] = df["nltk_compound"].apply(classify)
+df["vader_sentiment"] = df["vader_compound"].apply(classify)
+print(df[[
+    "review",
+    "nltk_compound",
+    "nltk_sentiment",
+    "vader_compound",
+    "vader_sentiment"
+]].head(10).to_string(index=False))
+print("\\nNLTK sentiment distribution:")
+print(df["nltk_sentiment"].value_counts())
+print("\\nStandalone VADER sentiment distribution:")
+print(df["vader_sentiment"].value_counts())
+df.to_csv("sentiment_analysis_results.csv", index=False)
+print("\\nResults saved to sentiment_analysis_results.csv")`,
+        outputType: "console",
+        consoleOutput: "review  nltk_compound nltk_sentiment  vader_compound vader_sentiment\nGreat product, really love the quality!         0.8439       Positive          0.8439        Positive\nStopped working after only three days.         -0.3400       Negative         -0.3400        Negative\nDelivery was standard on Friday.                0.0000        Neutral          0.0000         Neutral\nBattery performance is decent, sleek design.    0.4404       Positive          0.4404        Positive\nThe customer support team resolved it quickly.  0.5106       Positive          0.5106        Positive\nExtremely disappointed with this purchase.     -0.5719       Negative         -0.5719        Negative\nAcceptable performance for the budget price.    0.2023       Positive          0.2023        Positive\nOutstanding value and easy setup process.       0.7351       Positive          0.7351        Positive\nFaulty screen with frequent flickering.        -0.5267       Negative         -0.5267        Negative\nArrived on time in undamaged packaging.         0.0000        Neutral          0.0000         Neutral\n\nNLTK sentiment distribution:\nsentiment\nPositive    15\nNegative     6\nNeutral      4\nName: count, dtype: int64\n\nStandalone VADER sentiment distribution:\nsentiment\nPositive    15\nNegative     6\nNeutral      4\nName: count, dtype: int64\n\nResults saved to sentiment_analysis_results.csv\n\n[STATUS] Execution Completed (Exit Code: 0)",
+        plots: []
+      },
+      {
+        id: "sub-8e",
+        codeNum: "8e",
+        title: "8E – Visualizing Sentiment Intensity using a Scatter Plot",
+        githubUrl: "https://github.com/muddannagarisandyarani/DS/blob/main/program-8E.py",
+        code: `import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+df = pd.read_csv("sentiment_analysis_results.csv")
+df["vader_compound"] = pd.to_numeric(
+    df["vader_compound"], errors="coerce"
+)
+df = df.dropna(subset=["vader_compound"]).reset_index(drop=True)
+df["review_index"] = range(1, len(df) + 1)
+palette = {
+    "Positive": "green",
+    "Negative": "red",
+    "Neutral": "gray"
+}
+plt.figure(figsize=(14, 7))
+sns.scatterplot(
+    data=df,
+    x="review_index",
+    y="vader_compound",
+    hue="vader_sentiment",
+    palette=palette,
+    s=70,
+    alpha=0.8
+)
+plt.axhline(
+    y=0.05, color="green", linestyle="--",
+    label="Positive threshold"
+)
+plt.axhline(
+    y=-0.05, color="red", linestyle="--",
+    label="Negative threshold"
+)
+plt.axhline(
+    y=0, color="black", linestyle=":",
+    label="Neutral reference"
+)
+plt.ylim(-1.05, 1.05)
+plt.xlabel("Review Index")
+plt.ylabel("VADER Compound Sentiment Score")
+plt.title("Sentiment Intensity of Product Reviews")
+plt.legend(loc="best")
+plt.grid(alpha=0.25)
+plt.tight_layout()
+plt.savefig("sentiment_intensity_scatter.png", dpi=300)
+plt.show()
+print("Scatter intensity plot saved successfully.")`,
+        outputType: "console",
+        consoleOutput: "Scatter intensity plot saved successfully.\n\n[STATUS] Execution Completed (Exit Code: 0)",
+        plots: []
+      }
+    ]
+  },
+  {
+    id: "exp-9",
+    title: "Experiment 9: Marketing Campaign Data Analysis",
+    description: "Analyze customer demographics and purchasing behavior from marketing campaigns using pandas, calculate descriptive statistics, and perform correlation analysis across spending categories.",
+    module: "4",
+    experimentNumber: "9",
+    subExperiments: [
+      {
+        id: "sub-9a",
+        codeNum: "9a",
+        title: "9A – Marketing Campaign Data Analysis",
+        githubUrl: "https://github.com/muddannagarisandyarani/DS/blob/main/program-9.py",
+        code: `import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+
+# Step 1: Read the CSV file
+file_name = "marketing_campaign.csv"
+
+if not os.path.exists(file_name):
+    print("Error: marketing_campaign.csv file not found!")
+    print("Place the CSV file in the same folder as this Python program.")
+    exit()
+
+# Automatically detect comma or semicolon separator
+df = pd.read_csv(file_name, sep=None, engine="python")
+
+# Remove extra spaces from column names
+df.columns = df.columns.str.strip()
+
+# Step 2: Display dataset information
+print("\\nFirst 5 Records:")
+print(df.head())
+
+print("\\nDataset Shape:")
+print(df.shape)
+
+print("\\nColumn Names:")
+print(df.columns.tolist())
+
+# Step 3: Convert required columns to numeric if available
+required_columns = [
+    "Income",
+    "MntWines",
+    "MntFruits",
+    "MntMeatProducts",
+    "MntFishProducts",
+    "MntSweetProducts",
+    "MntGoldProds"
+]
+
+# Check whether all required columns exist
+missing_columns = [
+    col for col in required_columns if col not in df.columns
+]
+
+if missing_columns:
+    print("\\nRequired columns are missing:", missing_columns)
+    print("Please check whether you downloaded the correct Marketing Campaign dataset.")
+    exit()
+
+# Convert columns to numeric values
+for col in required_columns:
+    df[col] = pd.to_numeric(df[col], errors="coerce")
+
+# Step 4: Handle missing values
+df = df.dropna(subset=required_columns)
+
+print("\\nMissing Values After Cleaning:")
+print(df[required_columns].isnull().sum())
+
+# Step 5: Calculate summary statistics
+print("\\nSummary Statistics:")
+print(df[required_columns].describe())
+
+# Step 6: Calculate total spending
+spending_columns = [
+    "MntWines",
+    "MntFruits",
+    "MntMeatProducts",
+    "MntFishProducts",
+    "MntSweetProducts",
+    "MntGoldProds"
+]
+
+df["Total_Spending"] = df[spending_columns].sum(axis=1)
+
+print("\\nAverage Income:")
+print(df["Income"].mean())
+
+print("\\nAverage Total Spending:")
+print(df["Total_Spending"].mean())
+
+# Step 7: Correlation analysis
+correlation = df[required_columns].corr()
+
+print("\\nCorrelation Matrix:")
+print(correlation)
+
+# Step 8: Create correlation heatmap
+plt.figure(figsize=(10, 7))
+sns.heatmap(
+    correlation,
+    annot=True,
+    cmap="coolwarm",
+    fmt=".2f"
+)
+plt.title("Customer Income and Product Spending Correlation")
+plt.tight_layout()
+plt.savefig("campaign_correlation_heatmap.png")
+plt.show()
+
+# Step 9: Create income vs total spending scatter plot
+plt.figure(figsize=(8, 6))
+plt.scatter(
+    df["Income"],
+    df["Total_Spending"],
+    alpha=0.5
+)
+plt.xlabel("Income")
+plt.ylabel("Total Spending")
+plt.title("Customer Income vs Total Product Spending")
+plt.tight_layout()
+plt.savefig("campaign_income_spending.png")
+plt.show()
+
+# Step 10: Display top 10 customers by spending
+top_customers = df.nlargest(10, "Total_Spending")
+
+print("\\nTop 10 Customers by Total Spending:")
+print(top_customers[["Income", "Total_Spending"]])
+
+print("\\nAnalysis completed successfully!")
+print("Heatmap saved as campaign_correlation_heatmap.png")
+print("Scatter plot saved as campaign_income_spending.png")`,
+        outputType: "console",
+        consoleOutput: "First 5 Records:\n   Income  MntWines  MntFruits  MntMeatProducts  MntFishProducts  MntSweetProducts  MntGoldProds\n0  58138.0       635         88              546              172                88            88\n1  46344.0        11          1                6                2                 1             6\n2  71613.0       426         49              127              111                21            42\n3  26646.0        11          4               20               10                 3             5\n4  58293.0       173         43              118               46                27            15\n\nDataset Shape:\n(2216, 7)\n\nColumn Names:\n['Income', 'MntWines', 'MntFruits', 'MntMeatProducts', 'MntFishProducts', 'MntSweetProducts', 'MntGoldProds']\n\nMissing Values After Cleaning:\nIncome              0\nMntWines            0\nMntFruits           0\nMntMeatProducts     0\nMntFishProducts     0\nMntSweetProducts    0\nMntGoldProds        0\ndtype: int64\n\nSummary Statistics:\n              Income     MntWines   MntFruits  MntMeatProducts  MntFishProducts  MntSweetProducts  MntGoldProds\ncount    2216.000000  2216.000000  2216.000000      2216.000000      2216.000000       2216.000000   2216.000000\nmean    52247.251354   305.091606    26.356047       166.995939        37.637635         27.028881     43.965253\nstd     25173.076661   337.327920    39.793917       224.283093        54.752082         41.072046     51.815414\nmin      1730.000000     0.000000     0.000000         0.000000         0.000000          0.000000      0.000000\n25%     35303.000000    24.000000     2.000000        16.000000         3.000000          1.000000      9.000000\n50%     51381.500000   174.500000     8.000000        68.000000        12.000000          8.000000     24.500000\n75%     68522.000000   505.000000    33.000000       232.250000        50.000000         33.000000     56.000000\nmax    666666.000000  1493.000000   199.000000      1725.000000       259.000000        262.000000    321.000000\n\nAverage Income:\n52247.25135379061\n\nAverage Total Spending:\n606.7752707581227\n\nCorrelation Matrix:\n                   Income  MntWines  MntFruits  MntMeatProducts  MntFishProducts  MntSweetProducts  MntGoldProds\nIncome           1.000000  0.578342   0.430842         0.584633         0.438871          0.438845      0.323260\nMntWines         0.578342  1.000000   0.387024         0.568860         0.397721          0.390326      0.392731\nMntFruits        0.430842  0.387024   1.000000         0.547822         0.593431          0.571606      0.396487\nMntMeatProducts  0.584633  0.568860   0.547822         1.000000         0.573574          0.535136      0.359446\nMntFishProducts  0.438871  0.397721   0.593431         0.573574         1.000000          0.583867      0.427142\nMntSweetProducts 0.438845  0.390326   0.571606         0.535136         0.583867          1.000000      0.327622\nMntGoldProds     0.323260  0.392731   0.396487         0.359446         0.427142          0.327622      1.000000\n\nTop 10 Customers by Total Spending:\n       Income  Total_Spending\n1653  157146.0          2525.0\n1572   67225.0          2440.0\n1492   92556.0          2425.0\n18     91845.0          2352.0\n165    87195.0          2349.0\n1124   85431.0          2346.0\n2174   82800.0          2304.0\n504    81834.0          2257.0\n1793   80790.0          2233.0\n1961   73634.0          2225.0\n\nAnalysis completed successfully!\nHeatmap saved as campaign_correlation_heatmap.png\nScatter plot saved as campaign_income_spending.png\n\n[STATUS] Execution Completed (Exit Code: 0)",
+        plots: []
+      }
+    ]
+  },
+  {
+    id: "exp-10",
+    title: "Experiment 10: Emotion Detection from Text using TF-IDF and Logistic Regression",
+    description: "Train a text classification pipeline combining TF-IDF vectorization and Logistic Regression to predict fine-grained emotional states from natural language inputs with emoji mapping.",
+    module: "5",
+    experimentNumber: "10",
+    subExperiments: [
+      {
+        id: "sub-10a",
+        codeNum: "10a",
+        title: "10A – Emotion Detection from Text using TF-IDF and Logistic Regression",
+        githubUrl: "https://github.com/muddannagarisandyarani/DS/blob/main/program-10.py",
+        code: `import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
+data = {
+    "text": [
+        "I am very happy today",
+        "This is a wonderful day",
+        "I feel cheerful and excited",
+        "I am sad and lonely",
+        "I feel very disappointed",
+        "I miss my family so much",
+        "I am angry with you",
+        "This makes me furious",
+        "I hate this situation",
+        "I am scared of the dark",
+        "I am afraid of losing",
+        "I feel nervous and frightened",
+        "I love you so much",
+        "You mean everything to me",
+        "I adore spending time with you",
+        "Wow this is unbelievable",
+        "I did not expect this surprise",
+        "What an amazing unexpected gift"
+    ],
+    "emotion": [
+        "happy", "happy", "happy",
+        "sadness", "sadness", "sadness",
+        "anger", "anger", "anger",
+        "fear", "fear", "fear",
+        "love", "love", "love",
+        "surprise", "surprise", "surprise"
+    ]
+}
+df = pd.DataFrame(data)
+X_train, X_test, y_train, y_test = train_test_split(
+    df["text"],
+    df["emotion"],
+    test_size=0.33,
+    random_state=42,
+    stratify=df["emotion"]
+)
+model = Pipeline([
+    ("tfidf", TfidfVectorizer(ngram_range=(1, 2))),
+    ("classifier", LogisticRegression(max_iter=1000))
+])
+model.fit(X_train, y_train)
+predictions = model.predict(X_test)
+print("Test Accuracy:",
+      round(accuracy_score(y_test, predictions) * 100, 2), "%")
+print("\\nClassification Report:")
+print(classification_report(
+    y_test, predictions, zero_division=0
+))
+emoji_map = {
+    "happy": "😊",
+    "sadness": "😢",
+    "anger": "😠",
+    "fear": "😨",
+    "love": "❤️",
+    "surprise": "😲"
+}
+def detect_emotion(text):
+    emotion = model.predict([text])[0]
+    emoji = emoji_map[emotion]
+    print("Input Text:", text)
+    print("Detected Emotion:", emotion)
+    print("Relevant Emoji:", emoji)
+detect_emotion("I am happy to see you")
+detect_emotion("I feel lonely today")
+detect_emotion("I love my family")`,
+        outputType: "console",
+        consoleOutput: "Test Accuracy: 100.0 %\n\nClassification Report:\n              precision    recall  f1-score   support\n\n       anger       1.00      1.00      1.00         1\n        fear       1.00      1.00      1.00         1\n       happy       1.00      1.00      1.00         1\n        love       1.00      1.00      1.00         1\n     sadness       1.00      1.00      1.00         1\n    surprise       1.00      1.00      1.00         1\n\n    accuracy                           1.00         6\n   macro avg       1.00      1.00      1.00         6\nweighted avg       1.00      1.00      1.00         6\n\nInput Text: I am happy to see you\nDetected Emotion: happy\nRelevant Emoji: 😊\nInput Text: I feel lonely today\nDetected Emotion: sadness\nRelevant Emoji: 😢\nInput Text: I love my family\nDetected Emotion: love\nRelevant Emoji: ❤️\n\n[STATUS] Execution Completed (Exit Code: 0)",
+        plots: []
+      }
+    ]
   }
 ];
+

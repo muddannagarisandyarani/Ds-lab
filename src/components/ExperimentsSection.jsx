@@ -331,7 +331,7 @@ export default function ExperimentsSection({
                 Academic Lab Experiments
               </h3>
               <span className="px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-cyan-950/80 text-cyan-400 border border-cyan-500/40">
-                7 Experiments • {totalSubExperimentsCount} Sub-Experiments
+                {experiments.length} Experiments • {totalSubExperimentsCount} Sub-Experiments
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -398,7 +398,7 @@ export default function ExperimentsSection({
           <div className="lg:col-span-3 glass-card rounded-2xl p-3 border border-slate-800/90 flex flex-col justify-between">
             <div>
               <div className="px-2 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-between border-b border-slate-800/80 mb-2">
-                <span>Experiments (1 - 7)</span>
+                <span>Experiments (1 - {experiments.length})</span>
                 <span className="text-cyan-400 font-mono">{filteredExperiments.length} Total</span>
               </div>
 

@@ -119,13 +119,14 @@ export default function App() {
       const deletedStr = localStorage.getItem('ds_lab_deleted_ids');
       const deletedIds = deletedStr ? JSON.parse(deletedStr) : [];
 
-      // Check versioned cache (v3 includes all 7 experiments & 23 sub-experiments)
-      const savedStr = localStorage.getItem('ds_lab_experiments_v3');
+      // Check versioned cache (v4 includes all 10 experiments & 30 sub-experiments)
+      const savedStr = localStorage.getItem('ds_lab_experiments_v4') || localStorage.getItem('ds_lab_experiments_v3');
       if (!savedStr) {
         // Clear deprecated legacy caches to avoid stale experiments
         try {
           localStorage.removeItem('ds_lab_experiments');
           localStorage.removeItem('ds_lab_experiments_v2');
+          localStorage.removeItem('ds_lab_experiments_v3');
         } catch (_e) {}
         return initialExperiments.filter(e => !deletedIds.includes(e.id));
       }
@@ -227,7 +228,8 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('ds_lab_experiments_v3', JSON.stringify(experiments));
+      localStorage.setItem('ds_lab_experiments_v4', JSON.stringify(experiments));
+      localStorage.removeItem('ds_lab_experiments_v3');
     } catch (_err) {
       // Ignore
     }
@@ -240,7 +242,7 @@ export default function App() {
       if (Array.isArray(data) && data.length > 0) {
         setExperiments(data);
         try {
-          localStorage.setItem('ds_lab_experiments_v3', JSON.stringify(data));
+          localStorage.setItem('ds_lab_experiments_v4', JSON.stringify(data));
         } catch (_e) {
           // Ignore
         }
